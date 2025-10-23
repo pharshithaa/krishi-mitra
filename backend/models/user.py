@@ -12,13 +12,6 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: constr(min_length=8)  # enforce via validator for custom message
     full_name: str = Field(..., min_length=2, max_length=100)
-    phone_number: str = Field(..., min_length=10, max_length=15)
-    
-    # Location Information
-    state: str = Field(..., min_length=2, max_length=50)
-    district: str = Field(..., min_length=2, max_length=50)
-    village: str = Field(..., min_length=2, max_length=100)
-    pincode: str = Field(..., min_length=6, max_length=6)
     
     # Farming Information
     farm_size: FarmSize
@@ -37,21 +30,6 @@ class UserCreate(BaseModel):
             raise ValueError("Password must include both letters and numbers")
         return v
 
-    @field_validator("phone_number")
-    @classmethod
-    def validate_phone_number(cls, v: str) -> str:
-        # Allow digits with optional + and spaces/hyphens removed
-        digits = ''.join(ch for ch in v if ch.isdigit())
-        if len(digits) < 10 or len(digits) > 15:
-            raise ValueError("Phone number must have 10-15 digits")
-        return v
-
-    @field_validator("pincode")
-    @classmethod
-    def validate_pincode(cls, v: str) -> str:
-        if not v.isdigit() or len(v) != 6:
-            raise ValueError("Pincode must be exactly 6 digits")
-        return v
 
     @field_validator("primary_crops")
     @classmethod
@@ -73,6 +51,5 @@ class UserResponse(BaseModel):
 class UserInfoResponse(BaseModel):
     email: EmailStr
     full_name: str
-    phone_number: str
     primary_crops: List[str]
     farm_size: str

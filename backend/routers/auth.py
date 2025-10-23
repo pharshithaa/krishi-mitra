@@ -24,13 +24,6 @@ def signup(user: UserCreate):
             "email": user.email,
             "password": hashed,
             "full_name": user.full_name,
-            "phone_number": user.phone_number,
-            
-            # Location Information
-            "state": user.state,
-            "district": user.district,
-            "village": user.village,
-            "pincode": user.pincode,
             
             # Farming Information
             "farm_size": user.farm_size,
@@ -111,8 +104,8 @@ def get_user(current_user: dict = Depends(get_current_user)):
     return {
         "email": user["email"],
         "full_name": user["full_name"],
-        "phone_number": user["phone_number"],
-        "primary_crops": user["primary_crops"],
-        "farm_size": user["farm_size"]
+        "phone_number": user.get("phone_number", ""),
+        "primary_crops": user.get("primary_crops", []),
+        "farm_size": user.get("farm_size", "")
     }
 

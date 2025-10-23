@@ -7,6 +7,680 @@ load_dotenv()
 API_KEY = os.getenv("OPENWEATHER_API_KEY")
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
+# Crop-specific rules keyed by canonical crop names (lowercase)
+# Keep the set focused initially; extend as needed
+CROP_SPECIFIC_RULES = {
+
+    # 1️⃣ Cereal/Grain Crops
+    "rice": {
+        "irrigation": [
+            {"condition": lambda w, f: w["temperature"] > 35 and w["humidity"] < 40,
+             "message": "🌾 Rice under high temp & low humidity: Irrigate frequently to maintain waterlogged soil."},
+            {"condition": lambda w, f: w["rain_1h"] > 5,
+             "message": "🌧 Rice currently raining: Skip irrigation to prevent waterlogging."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 80 and w["temperature"] > 25,
+             "message": "🌾 Rice blast risk: Monitor leaves, apply preventive fungicide."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 5 or w.get("rain_3h", 0) > 10,
+             "message": "⛔ Avoid harvesting rice: Wet conditions may damage grains."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Hot & dry: Avoid fertilizer application on rice, focus on irrigation first."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 38 and w["humidity"] < 35,
+             "message": "🌵 Rice under drought stress: Provide shade, increase irrigation."}
+        ]
+    },
+    "wheat": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "🌾 Wheat soil moisture low: Irrigate to maintain growth."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 85,
+             "message": "🌾 Rust or aphid risk on wheat: Inspect and apply suitable pesticides."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] < 40,
+             "message": "🌾 Wheat ready for harvesting under dry, warm conditions."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Avoid fertilizer on wheat in hot weather; irrigate first."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 5,
+             "message": "❄️ Frost risk for wheat: Cover sensitive plants."}
+        ]
+    },
+    "maize": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30,
+             "message": "🌽 Maize soil moisture low: Irrigate to avoid yield loss."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] > 70,
+             "message": "🌽 Maize may face stem borer/fungal risk: Monitor daily."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 5 or w.get("rain_3h", 0) > 10,
+             "message": "⛔ Avoid harvesting maize in wet conditions."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30,
+             "message": "💧 Irrigate maize before fertilizer application to prevent stress."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 35 and w["humidity"] > 70,
+             "message": "🔥 Heat + humidity stress: Provide shade and monitor maize for wilting."}
+        ]
+    },
+    "barley": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "🌾 Barley soil moisture low: Irrigate moderately."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 80,
+             "message": "🌾 Powdery mildew risk on barley: Apply fungicide."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 28,
+             "message": "🌾 Dry conditions ideal for barley harvesting."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Avoid fertilizer in hot weather, irrigate barley first."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 5,
+             "message": "❄️ Frost risk for barley: Protect young plants."}
+        ]
+    },
+    "sorghum": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 20,
+             "message": "🌾 Sorghum needs irrigation in dry soil conditions."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 32,
+             "message": "🌾 Monitor for shoot fly and aphids in sorghum."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["humidity"] < 50,
+             "message": "🌾 Sorghum harvest best during dry weather."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "💧 Irrigate before fertilizer application to sorghum."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 38 and w["humidity"] < 35,
+             "message": "🌵 Sorghum drought stress: Monitor leaves, provide irrigation."}
+        ]
+    },
+    "millet": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 20,
+             "message": "🌾 Millet requires irrigation during dry spells."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 75,
+             "message": "🌾 High humidity: Monitor millet for leaf spot/fungal disease."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] < 50,
+             "message": "🌾 Millet harvest is optimal in dry, warm weather."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "💧 Irrigate before fertilizer application to millet."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 38 and w["humidity"] < 35,
+             "message": "🌵 Millet drought stress: Increase watering, monitor leaf wilting."}
+        ]
+    },
+    "oats": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "🌾 Oats soil moisture low: Irrigate as needed."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 80,
+             "message": "🌾 Oats fungal risk high: Inspect for rust and mildew."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 28,
+             "message": "🌾 Oats harvest under warm, dry conditions is best."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Avoid fertilizer in hot weather; irrigate oats first."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 5,
+             "message": "❄️ Frost risk for oats: Protect young plants."}
+        ]
+    },
+
+    # 2️⃣ Pulses/Legumes
+    "chickpea": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 20,
+             "message": "🌱 Chickpea requires irrigation in dry soil."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 30,
+             "message": "🌱 Watch for pod borer or aphid infestation in chickpea."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["humidity"] < 40,
+             "message": "🌱 Harvest chickpea when pods are dry."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "💧 Irrigate chickpea before fertilizer application."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Heat stress in chickpea: Provide shade and monitor for wilting."}
+        ]
+    },
+    "lentils": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 18,
+             "message": "🌱 Lentils need light irrigation in dry periods."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 80,
+             "message": "🌱 High humidity: Monitor lentils for fungal infections."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 28,
+             "message": "🌱 Lentils should be harvested during dry weather."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f["soil_moisture"] < 20,
+             "message": "💧 Irrigate before fertilizer application to lentils."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Heat stress in lentils: Provide shade and maintain soil moisture."}
+        ]
+    },
+    "black gram": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 20 and w["temperature"] > 32,
+             "message": "🌱 Black Gram: Urgent irrigation required in hot, dry conditions."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 28 and w["humidity"] > 70,
+             "message": "🌱 Black Gram: Monitor for Yellow Mosaic Virus (YMV) vector (whitefly)."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["humidity"] > 60 and w["rain_1h"] > 0,
+             "message": "⛔ Avoid harvesting Black Gram; wait for dry conditions to prevent seed damage."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_ph", 7.0) < 6.0, # Added .get() and default for safety
+             "message": "🧪 Black Gram: Consider lime application; check soil nutrient status before N/P/K."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 15,
+             "message": "🥶 Black Gram: Low temperatures can stunt growth; ensure sufficient mulching."}
+        ]
+    },
+    # Note: Rules for Green Gram, Pigeon Pea, Soybean, Peas should be added here to complete the Pulses/Legumes category.
+
+    # 3️⃣ Oilseeds
+    "groundnut": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "🥜 Groundnut: Critical irrigation needed, especially during pegging/pod filling."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 75 and w["temperature"] > 25,
+             "message": "🥜 Groundnut: High risk of Leaf Spot/Rust; apply preventive fungicide."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 0,
+             "message": "⛔ Groundnut: Avoid harvesting in wet conditions; pods may rot or quality will decrease."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("calcium_deficiency"),
+             "message": "⚠️ Groundnut: Apply gypsum (Calcium) during flowering/pegging for better pod filling."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 38,
+             "message": "🔥 Groundnut: Severe heat stress; irrigate heavily and look for wilting/scorch."}
+        ]
+    },
+    # Note: Rules for Mustard, Sunflower, Sesame, Coconut should be added here to complete the Oilseeds category.
+
+    # 4️⃣ Cash/Plantation Crops
+    "sugarcane": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 35,
+             "message": "🌿 Sugarcane: Heavy irrigation needed to maintain growth, especially in summer."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] > 70,
+             "message": "🌿 Sugarcane: Monitor for shoot borer/red rot risk under warm, humid conditions."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 5,
+             "message": "⛔ Sugarcane: Postpone harvest; wet conditions lower sugar recovery and soil damage."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_nitrogen") == "low",
+             "message": "🧪 Sugarcane: Apply high nitrogen fertilizer in the early growth stage."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 10,
+             "message": "🥶 Sugarcane: Cold weather stress; avoid harvesting as sugar content may be low."}
+        ]
+    },
+    # Note: Rules for Cotton, Tea, Coffee, Rubber, Tobacco should be added here to complete the Cash/Plantation category.
+
+    # 5️⃣ Vegetables
+    "tomato": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30,
+             "message": "🍅 Tomato: Consistent watering is critical to prevent blossom end rot."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 80 and w["temperature"] < 25,
+             "message": "🍅 Tomato: High risk of late blight; apply protectant fungicide immediately."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🍅 Tomato: Harvest early in the day; extreme heat can soften fruit quickly."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_potassium") == "low",
+             "message": "🧪 Tomato: Apply potassium-rich fertilizer during fruiting stage."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 38,
+             "message": "🔥 Tomato: Heat stress; may lead to flower drop. Shade or misting may help."}
+        ]
+    },
+    # Note: Rules for Onion, Potato, Carrot, Cabbage/Cauliflower/Broccoli, Brinjal, Capsicum, Cucumber, Spinach should be added here to complete the Vegetables category.
+
+    # 6️⃣ Fruits
+    "mango": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25 and f.get("growth_stage") == "flowering",
+             "message": "🥭 Mango: Avoid heavy irrigation during flowering to promote fruit set."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 75 and f.get("growth_stage") == "flowering",
+             "message": "🥭 Mango: High risk of powdery mildew on flowers; apply systemic fungicide."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 30,
+             "message": "🥭 Mango: Ideal harvest time when temperatures are high and dry."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("growth_stage") == "pre-flowering",
+             "message": "🧪 Mango: Apply nitrogen and phosphorus to support the upcoming bloom."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 5,
+             "message": "🥶 Mango: Frost/cold damage risk to young flushes; consider light irrigation or smoking."}
+        ]
+    },
+    "banana": {
+        "irrigation": [
+            {"condition": lambda w, f: w["rain_1h"] == 0 and w["temperature"] > 30,
+             "message": "🍌 Banana: Requires frequent, deep irrigation during hot and dry spells."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 80,
+             "message": "🍌 Banana: High risk of Sigatoka Leaf Spot; apply protectant fungicide."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 5,
+             "message": "⛔ Banana: Harvesting during rain can affect quality and handling; postpone."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_potassium") == "low",
+             "message": "🧪 Banana: Critical need for high Potassium fertilizer to support fruit development."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 10,
+             "message": "🥶 Banana: Cold damage risk; provide windbreaks or plant in sheltered areas."}
+        ]
+    },
+    "apple": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30,
+             "message": "🍎 Apple: Maintain consistent soil moisture; irrigate if soil is dry."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 70 and w["temperature"] > 25,
+             "message": "🍎 Apple: Monitor for Codling Moth and Apple Scab; apply timely sprays."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 0,
+             "message": "⛔ Apple: Avoid harvesting immediately after heavy rain; wait for fruit surface to dry."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_calcium") == "low",
+             "message": "🧪 Apple: Foliar spray of Calcium needed to prevent Bitter Pit."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 0,
+             "message": "❄️ Apple: Frost warning; use sprinklers or heaters for blossom protection."}
+        ]
+    },
+    "orange": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "🍊 Orange: Irrigate to prevent fruit splitting, especially during dry spells."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] < 50,
+             "message": "🍊 Orange: Monitor for Citrus Mites/Thrips; spray with suitable miticide."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["humidity"] > 80,
+             "message": "⛔ Orange: High humidity can promote mold; harvest on dry days."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_zinc") == "low",
+             "message": "🧪 Orange: Apply Zinc and Manganese foliar sprays for healthy leaf development."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 5,
+             "message": "🥶 Orange: Frost risk; cover young trees or use micro-sprinklers."}
+        ]
+    },
+    "grapes": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30 and f.get("growth_stage") == "berry swelling",
+             "message": "🍇 Grapes: Moderate irrigation needed during berry swelling; avoid overwatering."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 75 and w["rain_1h"] > 0,
+             "message": "🍇 Grapes: High risk of Downy Mildew; apply fungicide before next rain."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 1,
+             "message": "⛔ Grapes: Do not harvest during rain or when vines are wet; high rot risk."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_potassium") == "low",
+             "message": "🧪 Grapes: Potassium application essential for sugar development in berries."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Grapes: Heat stress; may lead to sunburn or uneven ripening. Use shade nets."}
+        ]
+    },
+    "pomegranate": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "🔴 Pomegranate: Consistent irrigation is crucial to prevent fruit cracking."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 30,
+             "message": "🔴 Pomegranate: Monitor for fruit borer/anar butterfly; apply preventive measures."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 0,
+             "message": "⛔ Pomegranate: Avoid harvesting in wet weather; it increases post-harvest decay."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_boron") == "low",
+             "message": "🧪 Pomegranate: Boron deficiency can cause cracking; apply foliar spray."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 40,
+             "message": "🔥 Pomegranate: Extreme heat; provide heavy mulching and light irrigation."}
+        ]
+    },
+    "papaya": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30,
+             "message": "🥭 Papaya: Water regularly, but avoid waterlogging to prevent collar rot."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 25 and w["humidity"] > 70,
+             "message": "🥭 Papaya: High risk of viral disease (PRSV); monitor and remove infected plants."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 5,
+             "message": "⛔ Papaya: Postpone harvest; wet fruit is highly susceptible to fungal spoilage."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_nitrogen") == "low",
+             "message": "🧪 Papaya: Apply balanced NPK fertilizer frequently, as it's a heavy feeder."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 10,
+             "message": "🥶 Papaya: Cold can stop growth and damage leaves; protect from frost."}
+        ]
+    },
+    "guava": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "🍈 Guava: Needs consistent irrigation, especially during fruiting season."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 30,
+             "message": "🍈 Guava: Watch for fruit fly infestation; use traps or baiting."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["humidity"] > 80,
+             "message": "⛔ Guava: High humidity can cause quick decay; harvest in dry periods."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_nitrogen") == "low",
+             "message": "🧪 Guava: Apply high nitrogen fertilizer after pruning for new growth."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 5,
+             "message": "🥶 Guava: Young plants are cold-sensitive; provide protection."}
+        ]
+    },
+    "watermelon": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30,
+             "message": "🍉 Watermelon: Critical watering needed during fruit development; avoid overhead watering."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 80,
+             "message": "🍉 Watermelon: High risk of Downy/Powdery Mildew; apply suitable fungicide."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 0,
+             "message": "⛔ Watermelon: Avoid harvesting or transport in wet conditions."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_potassium") == "low",
+             "message": "🧪 Watermelon: Apply potassium fertilizer for sweetness and rind strength."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Watermelon: High temperatures are fine, but ensure soil moisture to prevent sun scald."}
+        ]
+    },
+
+    # 7️⃣ Spices/Herbs
+    "turmeric": {
+        "irrigation": [
+            {"condition": lambda w, f: w["rain_1h"] == 0 and f["soil_moisture"] < 35,
+             "message": "🌶️ Turmeric: Needs constant soil moisture; irrigate every 10 days in dry weather."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 85,
+             "message": "🌶️ Turmeric: Monitor for leaf spot and rhizome rot; ensure good drainage."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 0,
+             "message": "⛔ Turmeric: Avoid harvesting; rhizomes are easier to cure when dug in dry soil."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_organic_matter") == "low",
+             "message": "🧪 Turmeric: Incorporate large quantities of farmyard manure (FYM)."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 15,
+             "message": "🥶 Turmeric: Low temp will retard growth; provide mulch for soil warmth."}
+        ]
+    },
+    "ginger": {
+        "irrigation": [
+            {"condition": lambda w, f: w["rain_1h"] == 0 and f["soil_moisture"] < 35,
+             "message": "🌶️ Ginger: Needs continuous moisture; irrigate every 7-10 days in dry spells."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 85,
+             "message": "🌶️ Ginger: High risk of soft rot; ensure soil is well-drained and avoid waterlogging."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 0,
+             "message": "⛔ Ginger: Avoid harvesting in wet conditions; this can cause damage and rot."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_organic_matter") == "low",
+             "message": "🧪 Ginger: Requires large amounts of organic fertilizer or compost."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Ginger: High temp and sun can cause scorching; provide partial shade or mulch."}
+        ]
+    },
+    "garlic": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "🧄 Garlic: Consistent watering is needed; reduce irrigation drastically near harvest."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 70 and w["temperature"] < 20,
+             "message": "🧄 Garlic: Watch for Rust and Thrips; spray with appropriate chemicals."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 0,
+             "message": "⛔ Garlic: Avoid harvesting; wet soil makes bulbs difficult to cure and store."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_nitrogen") == "low",
+             "message": "🧪 Garlic: Apply nitrogen early in the season, before bulbing begins."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 5,
+             "message": "🥶 Garlic: Cold temperature promotes good bulbing; protect from extreme frost."}
+        ]
+    },
+    "chili": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30,
+             "message": "🌶️ Chili: Needs regular watering; stress can cause flower drop and fruit abortion."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] < 50,
+             "message": "🌶️ Chili: Monitor for Thrips and Mites; spray undersides of leaves."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["rain_1h"] > 5,
+             "message": "⛔ Chili: Avoid drying harvested chilies outside during rain; move to indoor shelter."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_phosphorus") == "low",
+             "message": "🧪 Chili: Apply phosphorus and potassium for better flowering and fruit set."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 40,
+             "message": "🔥 Chili: High heat can cause flower drop; increase light irrigation."}
+        ]
+    },
+    "coriander": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 25,
+             "message": "🌿 Coriander: Keep soil consistently moist; light, frequent irrigation is best."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["temperature"] > 25,
+             "message": "🌿 Coriander: Watch for aphids and powdery mildew; cool, moist conditions help."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 30,
+             "message": "⛔ Coriander: High temperature accelerates bolting; harvest leaves quickly."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_nitrogen") == "low",
+             "message": "🧪 Coriander: Apply nitrogen to promote rapid vegetative growth."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 10,
+             "message": "🥶 Coriander: Hardy to cold, but protect from heavy frost to prevent leaf damage."}
+        ]
+    },
+    "mint": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30,
+             "message": "🌿 Mint: Keep soil moist at all times; a heavy drinker, especially in sun."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 80,
+             "message": "🌿 Mint: High risk of mint rust; ensure good air circulation."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] < 20,
+             "message": "🌿 Mint: Harvest when temperatures are cooler for highest essential oil content."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_nitrogen") == "low",
+             "message": "🧪 Mint: Frequent nitrogen feeding helps maintain lush, vigorous growth."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] > 35,
+             "message": "🔥 Mint: Heat stress can reduce oil quality; keep soil cool with mulch."}
+        ]
+    },
+    "basil": {
+        "irrigation": [
+            {"condition": lambda w, f: f["soil_moisture"] < 30,
+             "message": "🌿 Basil: Water at the base to prevent fungal issues on the leaves."},
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 75,
+             "message": "🌿 Basil: Monitor for Downy Mildew, especially on the undersides of leaves."},
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: f.get("growth_stage") == "flowering",
+             "message": "⛔ Basil: Pinch off flowers immediately to keep the plant producing leaves and flavor."},
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: f.get("soil_nitrogen") == "low",
+             "message": "🧪 Basil: Apply a balanced, liquid nitrogen feed every 4-6 weeks."},
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["temperature"] < 10,
+             "message": "🥶 Basil: Highly cold-sensitive; move indoors or cover to prevent blackening."}
+        ]
+    }
+}
+
+def _normalize_crop_name(name: str) -> str:
+    if not name:
+        return "generic"
+    s = name.strip().lower()
+    # remove parenthetical text and take first segment before '/'
+    if "(" in s:
+        s = s.split("(", 1)[0].strip()
+    if "/" in s:
+        s = s.split("/", 1)[0].strip()
+    return s
+
 def get_weather_by_location(city: str, state: str = None, country: str = "IN") -> dict:
     """Fetch current weather for a given location"""
     location_query = f"{city},{country}"
@@ -206,6 +880,39 @@ def generate_farm_alerts(weather_info: dict, farm: dict) -> dict:
         alerts["general_tips"] = "🌵 Dry conditions: Focus on irrigation, consider mulching to retain moisture."
     else:
         alerts["general_tips"] = "🌱 Good farming conditions today."
+
+    # -------- CROP-SPECIFIC RULES --------
+    try:
+        primary = farm.get("primary_crops")
+        if not primary:
+            # fallback to single crop_type field
+            primary = [farm.get("crop_type", "generic")]
+        matched_msgs = {k: [] for k in alerts.keys()}
+        for raw_name in primary:
+            key = _normalize_crop_name(str(raw_name))
+            rules = CROP_SPECIFIC_RULES.get(key)
+            if not rules:
+                continue
+            for category, rule_list in rules.items():
+                for rule in rule_list:
+                    cond = rule.get("condition")
+                    msg = rule.get("message")
+                    if callable(cond) and msg and cond(weather_info, farm):
+                        # prefix with crop name for clarity
+                        prefixed = f"[{raw_name}] {msg}"
+                        matched_msgs[category].append(prefixed)
+        # merge into alerts (preserve existing general messages)
+        for category, items in matched_msgs.items():
+            if items:
+                base = alerts.get(category)
+                if base:
+                    # combine; keep base first
+                    alerts[category] = base + " " + " ".join(items)
+                else:
+                    alerts[category] = " ".join(items)
+    except Exception:
+        # fail-safe: never break alerts generation
+        pass
 
     return alerts
 

@@ -1,0 +1,36 @@
+{
+  "brand": "Krishimitra",
+  "search_location": "Search location...",
+  "notifications": "Notifications",
+  "nav": {
+    "dashboard": "Dashboard",
+    "disease_detection": "Disease Detection",
+    "fertilizer_advisor": "Fertilizer Advisor",
+    "local_advisory": "Local Advisory",
+    "settings": "Settings"
+  },
+  "header_title": "Krishimitra Dashboard",
+  "header_subtitle": "Smart agriculture risk assessment and advisory for {{location}}",
+  "tabs": {
+    "risk": "Risk Assessment",
+    "disease": "Disease Detection",
+    "fertilizer": "Fertilizer Advisor",
+    "advisory": "Local Advisory",
+    "chat": "Chatbot"
+  },
+  "chat": {
+    "title": "Ask Krishimitra",
+    "placeholder": "Ask about crops, weather, pests, soil...",
+    "send": "Send",
+    "empty": "Ask a question to get started"
+  },
+  "lang": {
+    "label": "Language",
+    "en": "English",
+    "hi": "Hindi",
+    "mr": "Marathi",
+    "bn": "Bengali",
+    "te": "Telugu",
+    "ta": "Tamil"
+  }
+}
