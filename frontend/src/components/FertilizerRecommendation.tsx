@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { CheckCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface SoilNutrient {
   name: string;
@@ -33,6 +34,7 @@ interface FertilizerRecommendation {
 
 const FertilizerRecommendation: React.FC = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
   const [cropType, setCropType] = useState("");
   const [soilType, setSoilType] = useState("");
@@ -203,7 +205,7 @@ const FertilizerRecommendation: React.FC = () => {
 
   const generateRecommendations = async () => {
     if (!cropType || !soilType || !growthStage || !temperature || !humidity || !moisture || !nitrogen || !phosphorous || !potassium) {
-      toast({ title: "Missing information", description: "Please fill in all required fields", variant: "destructive" });
+      toast({ title: t('fertilizer_recommendation.missing_info'), description: t('fertilizer_recommendation.missing_info_desc'), variant: "destructive" });
       return;
     }
     // Build payload
@@ -251,9 +253,9 @@ const FertilizerRecommendation: React.FC = () => {
         benefits: ["Backed by ML model", "Tailored to entered field conditions"]
       };
       setRecommendations([fertilizerInfo]);
-      toast({ title: "Recommendations Ready", description: "Fetched from backend model" });
+      toast({ title: t('fertilizer_recommendation.recommendations_ready'), description: t('fertilizer_recommendation.recommendations_ready_desc') });
     } catch (e: any) {
-      toast({ title: "Error", description: e?.message || "Prediction failed", variant: "destructive" });
+      toast({ title: t('fertilizer_recommendation.error'), description: e?.message || t('fertilizer_recommendation.prediction_failed'), variant: "destructive" });
     }
     setIsGenerating(false);
   };
@@ -277,18 +279,18 @@ const FertilizerRecommendation: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <Card className="lg:col-span-1">
         <CardHeader>
-          <CardTitle>Crop & Soil Information</CardTitle>
+          <CardTitle>{t('fertilizer_recommendation.title')}</CardTitle>
           <CardDescription>
-            Enter details about your crop and soil conditions
+            {t('fertilizer_recommendation.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="crop-type">Crop Type</Label>
+              <Label htmlFor="crop-type">{t('fertilizer_recommendation.crop_type')}</Label>
               <Select value={cropType} onValueChange={setCropType}>
                 <SelectTrigger id="crop-type">
-                  <SelectValue placeholder="Select crop" />
+                  <SelectValue placeholder={t('fertilizer_recommendation.select_crop')} />
                 </SelectTrigger>
                 <SelectContent>
                   {cropOptions.map((crop) => (
@@ -299,10 +301,10 @@ const FertilizerRecommendation: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="soil-type">Soil Type</Label>
+              <Label htmlFor="soil-type">{t('fertilizer_recommendation.soil_type')}</Label>
               <Select value={soilType} onValueChange={setSoilType}>
                 <SelectTrigger id="soil-type">
-                  <SelectValue placeholder="Select soil type" />
+                  <SelectValue placeholder={t('fertilizer_recommendation.select_soil_type')} />
                 </SelectTrigger>
                 <SelectContent>
                   {soilOptions.map((soil) => (
@@ -313,10 +315,10 @@ const FertilizerRecommendation: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="growth-stage">Growth Stage</Label>
+              <Label htmlFor="growth-stage">{t('fertilizer_recommendation.growth_stage')}</Label>
               <Select value={growthStage} onValueChange={setGrowthStage}>
                 <SelectTrigger id="growth-stage">
-                  <SelectValue placeholder="Select growth stage" />
+                  <SelectValue placeholder={t('fertilizer_recommendation.select_growth_stage')} />
                 </SelectTrigger>
                 <SelectContent>
                   {growthStageOptions.map((stage) => (
@@ -328,37 +330,37 @@ const FertilizerRecommendation: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="temp">Temperature (°C)</Label>
+                <Label htmlFor="temp">{t('fertilizer_recommendation.temperature')}</Label>
                 <Input id="temp" type="number" step="0.1" value={temperature} onChange={(e) => setTemperature(e.target.value)} placeholder="e.g., 28" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="humidity">Humidity (%)</Label>
+                <Label htmlFor="humidity">{t('fertilizer_recommendation.humidity')}</Label>
                 <Input id="humidity" type="number" step="0.1" value={humidity} onChange={(e) => setHumidity(e.target.value)} placeholder="e.g., 65" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="moisture">Soil Moisture (%)</Label>
+                <Label htmlFor="moisture">{t('fertilizer_recommendation.soil_moisture')}</Label>
                 <Input id="moisture" type="number" step="0.1" value={moisture} onChange={(e) => setMoisture(e.target.value)} placeholder="e.g., 40" />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="n">Nitrogen (N)</Label>
+                <Label htmlFor="n">{t('fertilizer_recommendation.nitrogen')}</Label>
                 <Input id="n" type="number" step="0.1" value={nitrogen} onChange={(e) => setNitrogen(e.target.value)} placeholder="e.g., 90" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="p">Phosphorous (P)</Label>
+                <Label htmlFor="p">{t('fertilizer_recommendation.phosphorous')}</Label>
                 <Input id="p" type="number" step="0.1" value={phosphorous} onChange={(e) => setPhosphorous(e.target.value)} placeholder="e.g., 42" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="k">Potassium (K)</Label>
+                <Label htmlFor="k">{t('fertilizer_recommendation.potassium')}</Label>
                 <Input id="k" type="number" step="0.1" value={potassium} onChange={(e) => setPotassium(e.target.value)} placeholder="e.g., 37" />
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="flex justify-between">
-                <Label htmlFor="soil-ph">Soil pH</Label>
+                <Label htmlFor="soil-ph">{t('fertilizer_recommendation.soil_ph')}</Label>
                 <span className="text-sm text-gray-500">{soilPH[0]}</span>
               </div>
               <Slider
@@ -370,27 +372,27 @@ const FertilizerRecommendation: React.FC = () => {
                 onValueChange={setSoilPH}
               />
               <div className="flex justify-between text-xs text-gray-500">
-                <span>Acidic (4.0)</span>
-                <span>Neutral (7.0)</span>
-                <span>Alkaline (9.0)</span>
+                <span>{t('fertilizer_recommendation.acidic')}</span>
+                <span>{t('fertilizer_recommendation.neutral')}</span>
+                <span>{t('fertilizer_recommendation.alkaline')}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="additional-info">Additional Notes (Optional)</Label>
+              <Label htmlFor="additional-info">{t('fertilizer_recommendation.additional_notes')}</Label>
               <Input
                 id="additional-info"
-                placeholder="Any other information about your field..."
+                placeholder={t('fertilizer_recommendation.additional_notes_placeholder')}
               />
             </div>
           </form>
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={resetForm} disabled={isGenerating}>
-            Reset
+            {t('fertilizer_recommendation.reset')}
           </Button>
           <Button onClick={generateRecommendations} disabled={isGenerating}>
-            {isGenerating ? "Generating..." : "Generate Recommendations"}
+            {isGenerating ? t('fertilizer_recommendation.generating') : t('fertilizer_recommendation.generate_recommendations')}
           </Button>
         </CardFooter>
       </Card>
@@ -399,16 +401,16 @@ const FertilizerRecommendation: React.FC = () => {
         {recommendations.length > 0 ? (
           <>
             <CardHeader>
-              <CardTitle>Fertilizer Recommendations</CardTitle>
+              <CardTitle>{t('fertilizer_recommendation.fertilizer_recommendations')}</CardTitle>
               <CardDescription>
-                Based on {cropType} growing in {soilType} soil at {growthStage} stage
+                {t('fertilizer_recommendation.based_on', { cropType, soilType, growthStage })}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="soil">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="soil">Soil Analysis</TabsTrigger>
-                  <TabsTrigger value="fertilizer">Fertilizer Plan</TabsTrigger>
+                  <TabsTrigger value="soil">{t('fertilizer_recommendation.soil_analysis')}</TabsTrigger>
+                  <TabsTrigger value="fertilizer">{t('fertilizer_recommendation.fertilizer_plan')}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="soil" className="pt-4">
@@ -417,11 +419,10 @@ const FertilizerRecommendation: React.FC = () => {
                       <AlertCircle className="w-5 h-5 text-blue-500 mr-2 mt-0.5" />
                       <div>
                         <p className="text-sm text-blue-700 font-medium">
-                          Soil Nutrient Status
+                          {t('fertilizer_recommendation.soil_nutrient_status')}
                         </p>
                         <p className="text-xs text-blue-600 mt-1">
-                          Analysis shows nutrient deficiencies that need to be addressed 
-                          with a balanced fertilization plan.
+                          {t('fertilizer_recommendation.soil_nutrient_desc')}
                         </p>
                       </div>
                     </div>

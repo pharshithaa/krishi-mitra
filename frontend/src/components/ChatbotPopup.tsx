@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Bot, User, Loader2, Sprout, X, Minimize2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { useTranslation } from 'react-i18next';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -34,6 +35,7 @@ interface RAGResponse {
 
 const ChatbotPopup: React.FC = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
   
   const [isOpen, setIsOpen] = useState(false);
@@ -177,7 +179,7 @@ const ChatbotPopup: React.FC = () => {
           
           {/* Floating tooltip */}
           <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-slate-800 text-white text-xs rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-            Ask me anything about farming! 🌱
+            {t('chatbot.tooltip')}
           </div>
         </div>
       </div>
@@ -194,8 +196,8 @@ const ChatbotPopup: React.FC = () => {
                 <Sprout className="w-4 h-4 text-emerald-600" />
               </div>
               <div>
-                <CardTitle className="text-sm font-medium">Krishi Assistant</CardTitle>
-                <p className="text-xs text-emerald-100">Your farming companion</p>
+                <CardTitle className="text-sm font-medium">{t('chatbot.assistant_name')}</CardTitle>
+                <p className="text-xs text-emerald-100">{t('chatbot.assistant_description')}</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -261,7 +263,7 @@ const ChatbotPopup: React.FC = () => {
                     <div className="bg-gradient-to-r from-slate-50 to-gray-50 text-slate-700 px-3 py-2 rounded-lg border border-slate-200">
                       <div className="flex items-center gap-2">
                         <Loader2 className="w-3 h-3 animate-spin text-emerald-500" />
-                        <span className="text-xs">Thinking...</span>
+                        <span className="text-xs">{t('chatbot.thinking')}</span>
                       </div>
                     </div>
                   </div>
@@ -274,7 +276,7 @@ const ChatbotPopup: React.FC = () => {
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask about farming... 🌱"
+                  placeholder={t('chatbot.placeholder')}
                   disabled={loading}
                   className="flex-1 text-xs h-8 border-slate-200 focus:border-emerald-300 focus:ring-emerald-200"
                 />
@@ -287,7 +289,7 @@ const ChatbotPopup: React.FC = () => {
                   {loading ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
-                    'Send'
+                    t('chatbot.send')
                   )}
                 </Button>
               </form>

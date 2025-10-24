@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, ImagePlus, CheckCircle, Info, AlertCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface DetectionResult {
   class: string;
@@ -340,6 +341,7 @@ const DiseaseDetection: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<DetectionResult | null>(null);
   const { toast } = useToast();
+  const { t } = useTranslation();
   const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -362,8 +364,8 @@ const DiseaseDetection: React.FC = () => {
   const handleAnalyze = async () => {
     if (!selectedFile) {
       toast({
-        title: "No image selected",
-        description: "Please upload an image to analyze",
+        title: t('disease_detection.no_image'),
+        description: t('disease_detection.no_image_desc'),
         variant: "destructive",
       });
       return;
@@ -374,7 +376,7 @@ const DiseaseDetection: React.FC = () => {
     try {
       const token = localStorage.getItem("access_token");
       if (!token) {
-        throw new Error("Authentication required. Please log in.");
+        throw new Error(t('disease_detection.auth_required'));
       }
 
       const formData = new FormData();
@@ -398,8 +400,8 @@ const DiseaseDetection: React.FC = () => {
       if (data.success && data.prediction) {
         setResult(data.prediction);
         toast({
-          title: "Analysis Complete",
-          description: `Detected: ${data.prediction.crop} - ${data.prediction.disease}`,
+          title: t('disease_detection.analysis_complete'),
+          description: `${t('disease_detection.detected')} ${data.prediction.crop} - ${data.prediction.disease}`,
         });
       } else {
         throw new Error(data.error || "Analysis failed");
@@ -407,8 +409,8 @@ const DiseaseDetection: React.FC = () => {
     } catch (error) {
       console.error("Disease detection error:", error);
       toast({
-        title: "Analysis Failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        title: t('disease_detection.analysis_failed'),
+        description: error instanceof Error ? error.message : t('disease_detection.analysis_failed_desc'),
         variant: "destructive",
       });
     } finally {
@@ -426,16 +428,16 @@ const DiseaseDetection: React.FC = () => {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>Plant Disease Detection</CardTitle>
+          <CardTitle>{t('disease_detection.title')}</CardTitle>
           <CardDescription>
-            Upload a clear image of the affected plant for analysis
+            {t('disease_detection.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="grid w-full items-center gap-3">
               <Label htmlFor="plant-image" className="text-base font-semibold">
-                Upload Plant Image for Disease Detection
+                {t('disease_detection.upload_label')}
               </Label>
               <div className="flex items-center gap-2">
                 <Input
@@ -458,16 +460,16 @@ const DiseaseDetection: React.FC = () => {
                           className="w-full h-full object-contain rounded-md"
                         />
                         <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                          Preview
+                          {t('disease_detection.preview')}
                         </div>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center text-gray-500 p-6">
                         <ImagePlus className="w-12 h-12 mb-3 text-gray-400" />
-                        <span className="text-lg font-medium mb-1">Click to upload plant image</span>
-                        <span className="text-sm text-gray-400">or drag and drop</span>
+                        <span className="text-lg font-medium mb-1">{t('disease_detection.click_upload')}</span>
+                        <span className="text-sm text-gray-400">{t('disease_detection.drag_drop')}</span>
                         <div className="mt-3 text-xs text-gray-400">
-                          Supports: JPG, PNG, WEBP (Max 10MB)
+                          {t('disease_detection.file_support')}
                         </div>
                       </div>
                     )}
@@ -490,32 +492,32 @@ const DiseaseDetection: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              <Label className="text-sm font-semibold text-gray-700">📸 Tips for Best Results:</Label>
+              <Label className="text-sm font-semibold text-gray-700">{t('disease_detection.tips_title')}</Label>
               <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
                 <ul className="text-sm text-gray-700 space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 mt-0.5">•</span>
-                    <span><strong>Good lighting:</strong> Take photos in natural daylight, avoid flash</span>
+                    <span>{t('disease_detection.tips.lighting')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 mt-0.5">•</span>
-                    <span><strong>Clear focus:</strong> Ensure the affected area is sharp and in focus</span>
+                    <span>{t('disease_detection.tips.focus')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 mt-0.5">•</span>
-                    <span><strong>Close-up shots:</strong> Fill the frame with the diseased leaf or plant part</span>
+                    <span>{t('disease_detection.tips.closeup')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 mt-0.5">•</span>
-                    <span><strong>Include context:</strong> Show both affected and healthy parts for comparison</span>
+                    <span>{t('disease_detection.tips.context')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 mt-0.5">•</span>
-                    <span><strong>Avoid shadows:</strong> No shadows, glare, or reflections on the plant</span>
+                    <span>{t('disease_detection.tips.shadows')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 mt-0.5">•</span>
-                    <span><strong>Multiple angles:</strong> Take photos from different angles if symptoms vary</span>
+                    <span>{t('disease_detection.tips.angles')}</span>
                   </li>
                 </ul>
               </div>
@@ -524,14 +526,14 @@ const DiseaseDetection: React.FC = () => {
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={resetForm} disabled={isAnalyzing}>
-            Reset
+            {t('disease_detection.reset')}
           </Button>
           <Button onClick={handleAnalyze} disabled={!selectedFile || isAnalyzing}>
             {isAnalyzing ? (
-              <>Analyzing...</>
+              <>{t('disease_detection.analyzing')}</>
             ) : (
               <>
-                <Upload className="mr-2 h-4 w-4" /> Analyze Image
+                <Upload className="mr-2 h-4 w-4" /> {t('disease_detection.analyze')}
               </>
             )}
           </Button>
@@ -555,14 +557,14 @@ const DiseaseDetection: React.FC = () => {
               <CardDescription>
                 {diseaseInfo[result.disease]?.description || 
                  diseaseInfo[result.disease.toLowerCase()]?.description ||
-                 `${result.disease} detected in ${result.crop}. Please consult with agricultural experts for specific treatment recommendations.`}
+                 `${result.disease} ${t('disease_detection.fallback_description')}`}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="treatment">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="treatment">Treatment</TabsTrigger>
-                  <TabsTrigger value="prevention">Prevention</TabsTrigger>
+                  <TabsTrigger value="treatment">{t('disease_detection.treatment')}</TabsTrigger>
+                  <TabsTrigger value="prevention">{t('disease_detection.prevention')}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="treatment" className="pt-4">
                   <div className="space-y-4">
@@ -571,8 +573,7 @@ const DiseaseDetection: React.FC = () => {
                         <div className="flex items-start">
                           <Info className="w-5 h-5 text-amber-500 mr-2 mt-0.5" />
                           <p className="text-sm">
-                            Apply treatments promptly for best results. Always follow
-                            product instructions and consider organic options when possible.
+                            {t('disease_detection.treatment_note')}
                           </p>
                         </div>
                       </div>
@@ -581,7 +582,7 @@ const DiseaseDetection: React.FC = () => {
                       {(diseaseInfo[result.disease]?.treatment || 
                         diseaseInfo[result.disease.toLowerCase()]?.treatment ||
                         diseaseInfo["healthy"]?.treatment || 
-                        ["Consult with agricultural experts for specific treatment recommendations"]).map((item, index) => (
+                        [t('disease_detection.fallback_treatment')]).map((item, index) => (
                         <li key={index} className="flex items-start">
                           <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5 shrink-0" />
                           <span>{item}</span>
@@ -595,7 +596,7 @@ const DiseaseDetection: React.FC = () => {
                     {(diseaseInfo[result.disease]?.prevention || 
                       diseaseInfo[result.disease.toLowerCase()]?.prevention ||
                       diseaseInfo["healthy"]?.prevention || 
-                      ["Follow good agricultural practices", "Regular monitoring and inspection"]).map((item, index) => (
+                      [t('disease_detection.fallback_prevention_1'), t('disease_detection.fallback_prevention_2')]).map((item, index) => (
                       <li key={index} className="flex items-start">
                         <CheckCircle className="w-5 h-5 text-blue-500 mr-2 mt-0.5 shrink-0" />
                         <span>{item}</span>
@@ -612,10 +613,10 @@ const DiseaseDetection: React.FC = () => {
               <Upload className="h-8 w-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-700 mb-2">
-              No Analysis Results Yet
+              {t('disease_detection.no_results')}
             </h3>
             <p className="text-gray-500 text-sm">
-              Upload an image and click "Analyze" to detect plant diseases
+              {t('disease_detection.no_results_desc')}
             </p>
           </div>
         )}

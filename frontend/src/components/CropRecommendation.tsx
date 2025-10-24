@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Sprout, Droplets, Thermometer, Calendar } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface CropRecommendationResult {
   name: string;
@@ -20,6 +21,7 @@ interface CropRecommendationResult {
 
 const CropRecommendation: React.FC = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
   
   // Form state
@@ -360,8 +362,8 @@ const CropRecommendation: React.FC = () => {
   const generateRecommendation = async () => {
     if (!nitrogen || !phosphorus || !potassium || !temperature || !humidity || !ph || !rainfall) {
       toast({ 
-        title: "Missing information", 
-        description: "Please fill in all required fields", 
+        title: t('crop_recommendation.missing_info'), 
+        description: t('crop_recommendation.missing_info_desc'), 
         variant: "destructive" 
       });
       return;
@@ -400,10 +402,10 @@ const CropRecommendation: React.FC = () => {
       const cropInfo = cropDatabase[cropName] || {
         suitability: "Average" as const,
         score: 60,
-        growingSeason: "Consult local agricultural expert",
+        growingSeason: t('crop_recommendation.fallback.growing_season'),
         waterRequirement: "Medium" as const,
-        specialNotes: "Crop information not available in database",
-        benefits: ["ML model recommendation", "Suitable for your soil conditions"]
+        specialNotes: t('crop_recommendation.fallback.special_notes'),
+        benefits: t('crop_recommendation.fallback.benefits', { returnObjects: true })
       };
 
       setRecommendation({
@@ -412,13 +414,13 @@ const CropRecommendation: React.FC = () => {
       });
 
       toast({ 
-        title: "Recommendation Ready", 
-        description: "Crop recommendation generated successfully" 
+        title: t('crop_recommendation.recommendation_ready'), 
+        description: t('crop_recommendation.recommendation_ready_desc') 
       });
     } catch (e: any) {
       toast({ 
-        title: "Error", 
-        description: e?.message || "Failed to get recommendation", 
+        title: t('crop_recommendation.error'), 
+        description: e?.message || t('crop_recommendation.failed_recommendation'), 
         variant: "destructive" 
       });
     }
@@ -455,16 +457,16 @@ const CropRecommendation: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <Card className="lg:col-span-1">
         <CardHeader>
-          <CardTitle>Soil & Climate Information</CardTitle>
+          <CardTitle>{t('crop_recommendation.title')}</CardTitle>
           <CardDescription>
-            Enter your field conditions for personalized crop recommendation
+            {t('crop_recommendation.description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="nitrogen">Nitrogen (N)</Label>
+                <Label htmlFor="nitrogen">{t('crop_recommendation.nitrogen')}</Label>
                 <Input 
                   id="nitrogen" 
                   type="number" 
@@ -475,7 +477,7 @@ const CropRecommendation: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phosphorus">Phosphorus (P)</Label>
+                <Label htmlFor="phosphorus">{t('crop_recommendation.phosphorus')}</Label>
                 <Input 
                   id="phosphorus" 
                   type="number" 
@@ -486,7 +488,7 @@ const CropRecommendation: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="potassium">Potassium (K)</Label>
+                <Label htmlFor="potassium">{t('crop_recommendation.potassium')}</Label>
                 <Input 
                   id="potassium" 
                   type="number" 
@@ -500,7 +502,7 @@ const CropRecommendation: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="temperature">Temperature (°C)</Label>
+                <Label htmlFor="temperature">{t('crop_recommendation.temperature')}</Label>
                 <Input 
                   id="temperature" 
                   type="number" 
@@ -511,7 +513,7 @@ const CropRecommendation: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="humidity">Humidity (%)</Label>
+                <Label htmlFor="humidity">{t('crop_recommendation.humidity')}</Label>
                 <Input 
                   id="humidity" 
                   type="number" 
@@ -525,7 +527,7 @@ const CropRecommendation: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="ph">Soil pH</Label>
+                <Label htmlFor="ph">{t('crop_recommendation.soil_ph')}</Label>
                 <Input 
                   id="ph" 
                   type="number" 
@@ -536,7 +538,7 @@ const CropRecommendation: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="rainfall">Rainfall (mm)</Label>
+                <Label htmlFor="rainfall">{t('crop_recommendation.rainfall')}</Label>
                 <Input 
                   id="rainfall" 
                   type="number" 
@@ -551,10 +553,10 @@ const CropRecommendation: React.FC = () => {
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline" onClick={resetForm} disabled={isGenerating}>
-            Reset
+            {t('crop_recommendation.reset')}
           </Button>
           <Button onClick={generateRecommendation} disabled={isGenerating}>
-            {isGenerating ? "Analyzing..." : "Get Recommendation"}
+            {isGenerating ? t('crop_recommendation.analyzing') : t('crop_recommendation.get_recommendation')}
           </Button>
         </CardFooter>
       </Card>
@@ -563,16 +565,16 @@ const CropRecommendation: React.FC = () => {
         {recommendation ? (
           <>
             <CardHeader>
-              <CardTitle>Crop Recommendation</CardTitle>
+              <CardTitle>{t('crop_recommendation.crop_recommendation')}</CardTitle>
               <CardDescription>
-                Based on your soil and climate conditions
+                {t('crop_recommendation.based_on_conditions')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="recommendation">
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="recommendation">Recommendation</TabsTrigger>
-                  <TabsTrigger value="details">Growing Details</TabsTrigger>
+                  <TabsTrigger value="recommendation">{t('crop_recommendation.recommendation_tab')}</TabsTrigger>
+                  <TabsTrigger value="details">{t('crop_recommendation.details_tab')}</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="recommendation" className="pt-4">
@@ -581,13 +583,13 @@ const CropRecommendation: React.FC = () => {
                       <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-slate-600 font-medium mb-1">Recommended Crop</p>
+                            <p className="text-sm text-slate-600 font-medium mb-1">{t('crop_recommendation.recommended_crop')}</p>
                             <h2 className="text-xl font-semibold text-slate-800 capitalize">
                               {recommendation.name}
                             </h2>
                           </div>
                           <Badge className={getSuitabilityColor(recommendation.suitability)}>
-                            {recommendation.suitability} ({recommendation.score}%)
+                            {t(`crop_recommendation.suitability_levels.${recommendation.suitability.toLowerCase()}`)} ({recommendation.score}%)
                           </Badge>
                         </div>
                       </div>
@@ -598,29 +600,29 @@ const CropRecommendation: React.FC = () => {
                         <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
                           <Calendar className="h-5 w-5 text-white" />
                         </div>
-                        <p className="text-sm font-semibold text-blue-900 mb-1">Growing Seasons</p>
+                        <p className="text-sm font-semibold text-blue-900 mb-1">{t('crop_recommendation.growing_seasons')}</p>
                         <p className="text-xs text-blue-700 leading-relaxed">{recommendation.growingSeason}</p>
                       </div>
                       <div className="bg-gradient-to-br from-cyan-50 to-teal-50 border border-cyan-200 p-4 rounded-xl text-center shadow-sm hover:shadow-md transition-shadow">
                         <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center mx-auto mb-3">
                           <Droplets className="h-5 w-5 text-white" />
                         </div>
-                        <p className="text-sm font-semibold text-cyan-900 mb-1">Water Needs</p>
-                        <p className="text-xs text-cyan-700">{recommendation.waterRequirement}</p>
+                        <p className="text-sm font-semibold text-cyan-900 mb-1">{t('crop_recommendation.water_needs')}</p>
+                        <p className="text-xs text-cyan-700">{t(`crop_recommendation.water_requirements.${recommendation.waterRequirement.toLowerCase()}`)}</p>
                       </div>
                       <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 p-4 rounded-xl text-center shadow-sm hover:shadow-md transition-shadow">
                         <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
                           <Sprout className="h-5 w-5 text-white" />
                         </div>
-                        <p className="text-sm font-semibold text-green-900 mb-1">Suitability</p>
-                        <p className="text-xs text-green-700 font-bold">{recommendation.score}% Match</p>
+                        <p className="text-sm font-semibold text-green-900 mb-1">{t('crop_recommendation.suitability')}</p>
+                        <p className="text-xs text-green-700 font-bold">{recommendation.score}% {t('crop_recommendation.match')}</p>
                       </div>
                     </div>
 
                     <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 p-4 rounded-xl shadow-sm">
                       <div className="flex items-start space-x-2 mb-2">
                         <div className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></div>
-                        <h4 className="text-sm font-semibold text-amber-900 tracking-wide">Agricultural Insights</h4>
+                        <h4 className="text-sm font-semibold text-amber-900 tracking-wide">{t('crop_recommendation.agricultural_insights')}</h4>
                       </div>
                       <p className="text-sm text-amber-800 leading-relaxed">{recommendation.specialNotes}</p>
                     </div>
@@ -630,7 +632,7 @@ const CropRecommendation: React.FC = () => {
                         <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                           <CheckCircle className="w-4 h-4 text-white" />
                         </div>
-                        <h4 className="text-sm font-semibold text-green-900 tracking-wide">Strategic Advantages</h4>
+                        <h4 className="text-sm font-semibold text-green-900 tracking-wide">{t('crop_recommendation.strategic_advantages')}</h4>
                       </div>
                       <div className="grid gap-3">
                         {recommendation.benefits.map((benefit, idx) => (
@@ -647,7 +649,7 @@ const CropRecommendation: React.FC = () => {
                 <TabsContent value="details" className="pt-4">
                   <div className="space-y-4">
                     <div className="bg-slate-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-slate-800 mb-2">Soil Conditions Analysis</h4>
+                      <h4 className="font-medium text-slate-800 mb-2">{t('crop_recommendation.soil_conditions_analysis')}</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                         <div>
                           <p className="text-slate-600">Nitrogen</p>
@@ -669,7 +671,7 @@ const CropRecommendation: React.FC = () => {
                     </div>
 
                     <div className="bg-blue-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-blue-800 mb-2">Climate Conditions</h4>
+                      <h4 className="font-medium text-blue-800 mb-2">{t('crop_recommendation.climate_conditions')}</h4>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                         <div className="flex items-center">
                           <Thermometer className="h-4 w-4 text-red-500 mr-2" />
@@ -696,13 +698,11 @@ const CropRecommendation: React.FC = () => {
                     </div>
 
                     <div className="bg-green-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-green-800 mb-2">Farming Recommendations</h4>
+                      <h4 className="font-medium text-green-800 mb-2">{t('crop_recommendation.farming_recommendations')}</h4>
                       <ul className="text-sm text-green-700 space-y-1">
-                        <li>• Monitor soil moisture levels regularly</li>
-                        <li>• Follow recommended fertilizer application schedule</li>
-                        <li>• Implement integrated pest management practices</li>
-                        <li>• Consider crop rotation for soil health</li>
-                        <li>• Consult local agricultural extension services</li>
+                        {t('crop_recommendation.farming_tips', { returnObjects: true }).map((tip, index) => (
+                          <li key={index}>• {tip}</li>
+                        ))}
                       </ul>
                     </div>
                   </div>
@@ -716,39 +716,38 @@ const CropRecommendation: React.FC = () => {
               <Sprout className="w-24 h-24 text-green-500 opacity-50" />
             </div>
             <h3 className="text-xl font-medium text-gray-700 mb-2">
-              No Recommendation Yet
+              {t('crop_recommendation.no_recommendation')}
             </h3>
             <p className="text-gray-500 mb-6 max-w-md">
-              Enter your soil and climate conditions to receive a personalized crop 
-              recommendation based on machine learning analysis.
+              {t('crop_recommendation.no_recommendation_desc')}
             </p>
             <div className="grid grid-cols-2 gap-4 text-left w-full max-w-md">
               <div className="flex items-start">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium">AI-Powered Analysis</p>
-                  <p className="text-xs text-gray-500">Machine learning recommendations</p>
+                  <p className="text-sm font-medium">{t('crop_recommendation.ai_analysis')}</p>
+                  <p className="text-xs text-gray-500">{t('crop_recommendation.ai_analysis_desc')}</p>
                 </div>
               </div>
               <div className="flex items-start">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium">Personalized Results</p>
-                  <p className="text-xs text-gray-500">Based on your conditions</p>
+                  <p className="text-sm font-medium">{t('crop_recommendation.personalized_results')}</p>
+                  <p className="text-xs text-gray-500">{t('crop_recommendation.personalized_results_desc')}</p>
                 </div>
               </div>
               <div className="flex items-start">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium">Detailed Insights</p>
-                  <p className="text-xs text-gray-500">Growing tips and benefits</p>
+                  <p className="text-sm font-medium">{t('crop_recommendation.detailed_insights')}</p>
+                  <p className="text-xs text-gray-500">{t('crop_recommendation.detailed_insights_desc')}</p>
                 </div>
               </div>
               <div className="flex items-start">
                 <CheckCircle className="w-5 h-5 text-green-500 mr-2 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium">Expert Knowledge</p>
-                  <p className="text-xs text-gray-500">Agricultural best practices</p>
+                  <p className="text-sm font-medium">{t('crop_recommendation.expert_knowledge')}</p>
+                  <p className="text-xs text-gray-500">{t('crop_recommendation.expert_knowledge_desc')}</p>
                 </div>
               </div>
             </div>

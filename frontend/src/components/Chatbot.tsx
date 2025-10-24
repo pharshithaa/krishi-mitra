@@ -44,7 +44,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ lang }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'assistant',
-      content: 'Hello! I\'m your AI agricultural assistant. Ask me anything about farming, crops, fertilizers, pest management, or agricultural best practices.',
+      content: t('chatbot.welcome_message'),
       timestamp: new Date().toISOString()
     }
   ]);
@@ -61,23 +61,23 @@ const Chatbot: React.FC<ChatbotProps> = ({ lang }) => {
     const lowerQuery = query.toLowerCase();
     
     if (lowerQuery.includes('wheat')) {
-      return `Wheat is best grown during the Rabi season (October-March) in India. Key points:\n\n• **Sowing**: October-December\n• **Temperature**: 15-25°C optimal\n• **Rainfall**: 300-400mm required\n• **Soil**: Well-drained loamy soil, pH 6.0-7.5\n• **Harvest**: March-April\n\nWheat requires cool, dry weather during grain filling. Avoid excessive moisture during maturity to prevent fungal diseases.`;
+      return t('chatbot.fallback_responses.wheat');
     }
     
     if (lowerQuery.includes('rice')) {
-      return `Rice is primarily grown during Kharif season (June-November). Details:\n\n• **Sowing**: June-July\n• **Temperature**: 20-35°C\n• **Rainfall**: 1000-2000mm\n• **Soil**: Clayey, waterlogged conditions\n• **Harvest**: October-November\n\nRice requires high humidity and standing water. Transplanting is done 20-25 days after sowing.`;
+      return t('chatbot.fallback_responses.rice');
     }
     
     if (lowerQuery.includes('fertilizer')) {
-      return `General fertilizer recommendations:\n\n• **NPK ratio**: Varies by crop and soil test\n• **Timing**: Split application for better efficiency\n• **Organic**: Compost, FYM improve soil health\n• **Micronutrients**: Zinc, iron often deficient\n\nAlways conduct soil testing before fertilizer application for best results.`;
+      return t('chatbot.fallback_responses.fertilizer');
     }
     
     if (lowerQuery.includes('pest') || lowerQuery.includes('disease')) {
-      return `Integrated Pest Management (IPM) approach:\n\n• **Prevention**: Crop rotation, resistant varieties\n• **Monitoring**: Regular field inspection\n• **Biological**: Beneficial insects, biopesticides\n• **Chemical**: Last resort, follow label instructions\n• **Cultural**: Proper spacing, sanitation\n\nEarly detection and prevention are key to effective pest management.`;
+      return t('chatbot.fallback_responses.pest');
     }
     
     // General agricultural guidance
-    return `I'd be happy to help with your agricultural question! Here are some general principles:\n\n• **Soil health**: Regular testing and organic matter addition\n• **Water management**: Efficient irrigation and drainage\n• **Crop selection**: Choose varieties suited to your climate\n• **Timing**: Follow local agricultural calendars\n• **Integrated approach**: Combine traditional and modern practices\n\nFor specific guidance, please consult your local agricultural extension officer or provide more details about your farming context.`;
+    return t('chatbot.fallback_responses.general');
   };
 
   // Convert markdown formatting to JSX
@@ -142,7 +142,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ lang }) => {
       
       if (!data.answer || data.retrieved_chunks.length === 0) {
         responseContent = generateFallbackResponse(userMessage.content);
-        responseSources = ["General Agricultural Knowledge"];
+        responseSources = [t('chatbot.fallback_source')];
       }
       
       const assistantMessage: ChatMessage = {
@@ -155,24 +155,24 @@ const Chatbot: React.FC<ChatbotProps> = ({ lang }) => {
       setMessages(prev => [...prev, assistantMessage]);
       
       toast({
-        title: "Response Generated",
+        title: t('chatbot.response_generated'),
         description: data.retrieved_chunks.length > 0 
-          ? `Retrieved ${data.retrieved_chunks.length} sources in ${data.latency_ms}ms`
-          : "Got your agricultural guidance!",
+          ? t('chatbot.response_desc_with_sources', { count: data.retrieved_chunks.length, latency: data.latency_ms })
+          : t('chatbot.response_desc_fallback'),
       });
 
     } catch (err: any) {
       console.error('Chat error:', err);
       const errorMessage: ChatMessage = {
         role: 'assistant',
-        content: `I apologize, but I encountered an error while processing your question. Please try again or contact support if the issue persists. Error: ${err.message}`,
+        content: t('chatbot.error_message', { error: err.message }),
         timestamp: new Date().toISOString()
       };
       setMessages(prev => [...prev, errorMessage]);
       
       toast({
-        title: "Error",
-        description: "Failed to get response from AI assistant",
+        title: t('chatbot.error'),
+        description: t('chatbot.error_desc'),
         variant: "destructive"
       });
     } finally {
@@ -224,7 +224,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ lang }) => {
             <div className="bg-gray-100 text-gray-800 px-4 py-3 rounded-lg">
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">AI is thinking...</span>
+                <span className="text-sm">{t('chatbot.thinking')}</span>
               </div>
             </div>
           </div>
@@ -235,7 +235,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ lang }) => {
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about crops, fertilizers, pest management, weather..."
+            placeholder={t('chatbot.placeholder')}
             disabled={loading}
             className="flex-1"
           />
@@ -243,7 +243,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ lang }) => {
             {loading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              'Send'
+              t('chatbot.send')
             )}
           </Button>
         </form>

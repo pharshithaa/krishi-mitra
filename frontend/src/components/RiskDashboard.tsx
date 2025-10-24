@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Thermometer, Droplets, Wind, AlertTriangle, CloudRain } from "lucide-react";
 import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from "recharts";
+import { useTranslation } from "react-i18next";
 
 interface RiskDashboardProps {
   location: string;
@@ -184,9 +185,8 @@ const WeatherCard: React.FC<{ title: string; value: string; icon: React.ReactNod
 );
 
 const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
+  const { t } = useTranslation();
   const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [weather, setWeather] = useState<{
     temperature?: number;
     humidity?: number;
@@ -194,6 +194,8 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
     rain_1h?: number;
     description?: string;
   } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<{
     irrigation?: string;
     pest_alert?: string;
@@ -279,41 +281,41 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
         // Temperature-based threats
         if (temp < profile.optimalTemp.min) {
           threats.push({
-            name: temp < profile.frostRisk ? "Frost damage risk" : "Cold stress",
-            probability: temp < profile.frostRisk ? "High" : "Medium",
-            due: `${Math.round(temp)}°C (optimal: ${profile.optimalTemp.min}-${profile.optimalTemp.max}°C)`
+            name: temp < profile.frostRisk ? t('risk_dashboard.threats.frost_damage') : t('risk_dashboard.threats.cold_stress'),
+            probability: temp < profile.frostRisk ? t('risk_dashboard.probability.high') : t('risk_dashboard.probability.medium'),
+            due: `${Math.round(temp)}°C (${t('risk_dashboard.optimal')} ${profile.optimalTemp.min}-${profile.optimalTemp.max}°C)`
           });
         } else if (temp > profile.optimalTemp.max) {
           threats.push({
-            name: temp > profile.heatStress ? "Heat stress" : "Temperature stress",
-            probability: temp > profile.heatStress ? "High" : "Medium", 
-            due: `${Math.round(temp)}°C (optimal: ${profile.optimalTemp.min}-${profile.optimalTemp.max}°C)`
+            name: temp > profile.heatStress ? t('risk_dashboard.threats.heat_stress') : t('risk_dashboard.threats.temperature_stress'),
+            probability: temp > profile.heatStress ? t('risk_dashboard.probability.high') : t('risk_dashboard.probability.medium'), 
+            due: `${Math.round(temp)}°C (${t('risk_dashboard.optimal')} ${profile.optimalTemp.min}-${profile.optimalTemp.max}°C)`
           });
         }
         
         // Humidity-based threats
         if (humidity > profile.pestRiskHumidity) {
           threats.push({
-            name: "Pest & disease risk",
-            probability: humidity > profile.pestRiskHumidity + 10 ? "High" : "Medium",
+            name: t('risk_dashboard.threats.pest_disease'),
+            probability: humidity > profile.pestRiskHumidity + 10 ? t('risk_dashboard.probability.high') : t('risk_dashboard.probability.medium'),
             due: `${Math.round(humidity)}% humidity`
           });
         }
         
         if (humidity > profile.fungalRisk.humidity && temp > profile.fungalRisk.temp) {
           threats.push({
-            name: "Fungal disease risk", 
-            probability: "High",
+            name: t('risk_dashboard.threats.fungal_disease'), 
+            probability: t('risk_dashboard.probability.high'),
             due: `${Math.round(humidity)}% humidity + ${Math.round(temp)}°C`
           });
         }
         
         // Drought stress
         if (weather?.rain_1h === 0 && humidity < 40) {
-          const severity = profile.droughtTolerance === "very_low" ? "High" : 
-                         profile.droughtTolerance === "low" ? "Medium" : "Low";
+          const severity = profile.droughtTolerance === "very_low" ? t('risk_dashboard.probability.high') : 
+                         profile.droughtTolerance === "low" ? t('risk_dashboard.probability.medium') : t('risk_dashboard.probability.low');
           threats.push({
-            name: "Drought stress",
+            name: t('risk_dashboard.threats.drought_stress'),
             probability: severity,
             due: `No rain + ${Math.round(humidity)}% humidity`
           });
@@ -323,8 +325,8 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
       // Fallback threat if no specific threats identified
       if (threats.length === 0) {
         threats.push({
-          name: "Weather-related stress",
-          probability: cropRisk > 60 ? "High" : cropRisk > 30 ? "Medium" : "Low",
+          name: t('risk_dashboard.threats.weather_stress'),
+          probability: cropRisk > 60 ? t('risk_dashboard.probability.high') : cropRisk > 30 ? t('risk_dashboard.probability.medium') : t('risk_dashboard.probability.low'),
           due: `${Math.round(temp)}°C / ${Math.round(humidity)}%`
         });
       }
@@ -342,38 +344,38 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Current Weather</CardTitle>
+            <CardTitle>{t('risk_dashboard.current_weather')}</CardTitle>
             <CardDescription>
-              Today's weather conditions in {location}
+              {t('risk_dashboard.weather_description', { location })}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-sm text-gray-500">Loading weather…</div>
+              <div className="text-sm text-gray-500">{t('risk_dashboard.loading')}</div>
             ) : error ? (
-              <div className="text-sm text-red-600">{error}</div>
+              <div className="text-sm text-red-600">{t('risk_dashboard.error')}</div>
             ) : (
               <div className="grid grid-cols-2 gap-4">
                 <WeatherCard 
-                  title="Temperature" 
+                  title={t('risk_dashboard.temperature')} 
                   value={weather?.temperature !== undefined ? `${Math.round(weather.temperature)}°C` : "-"} 
                   icon={<Thermometer className="w-6 h-6" />} 
                   className="bg-orange-50"
                 />
                 <WeatherCard 
-                  title="Humidity" 
-                  value={weather?.humidity !== undefined ? `${Math.round(weather.humidity)}%` : "-"} 
+                  title={t('risk_dashboard.humidity')} 
+                  value={weather?.humidity !== undefined ? `${weather.humidity}%` : "-"} 
                   icon={<Droplets className="w-6 h-6" />} 
                   className="bg-blue-50"
                 />
                 <WeatherCard 
-                  title="Wind Speed" 
-                  value={weather?.wind_speed !== undefined ? `${Math.round(weather.wind_speed)} km/h` : "-"} 
+                  title={t('risk_dashboard.wind_speed')} 
+                  value={weather?.wind_speed !== undefined ? `${weather.wind_speed} m/s` : "-"} 
                   icon={<Wind className="w-6 h-6" />} 
-                  className="bg-gray-50"
+                  className="bg-green-50"
                 />
                 <WeatherCard 
-                  title="Rainfall (1h)" 
+                  title={t('risk_dashboard.rainfall')} 
                   value={weather?.rain_1h !== undefined ? `${weather.rain_1h} mm` : "0 mm"} 
                   icon={<CloudRain className="w-6 h-6" />} 
                   className="bg-teal-50"
@@ -385,8 +387,8 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Risk Distribution Overview</CardTitle>
-            <CardDescription>Current risk levels across all your crops</CardDescription>
+            <CardTitle>{t('risk_dashboard.risk_distribution')}</CardTitle>
+            <CardDescription>{t('risk_dashboard.risk_distribution_description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -400,13 +402,13 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
                   interval={0}
                 />
                 <YAxis 
-                  label={{ value: 'Risk Level (%)', angle: -90, position: 'insideLeft' }}
+                  label={{ value: t('risk_dashboard.chart_risk_level'), angle: -90, position: 'insideLeft' }}
                   domain={[0, 25]}
                   ticks={[0, 5, 10, 15, 20, 25]}
                 />
                 <Tooltip 
-                  formatter={(value) => [`${value}%`, 'Risk Level']}
-                  labelFormatter={(label) => `Crop: ${label}`}
+                  formatter={(value) => [`${value}%`, t('risk_dashboard.chart_risk_level_short')]}
+                  labelFormatter={(label) => `${t('risk_dashboard.chart_crop')} ${label}`}
                 />
                 <Bar 
                   dataKey="riskLevel" 
@@ -427,9 +429,9 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Crop Risk Assessment</CardTitle>
+          <CardTitle>{t('risk_dashboard.crop_risk_assessment')}</CardTitle>
           <CardDescription>
-            Current risk levels for crops in your area
+            {t('risk_dashboard.crop_risk_description')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -439,7 +441,7 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="font-medium">{crop.name}</h3>
                   <span className="text-sm font-medium">
-                    Risk Level: {crop.riskLevel}%
+                    {t('risk_dashboard.risk_level')}: {crop.riskLevel}%
                   </span>
                 </div>
                 <Progress 
@@ -451,7 +453,7 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
                   <div className="flex items-start gap-2">
                     <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5" />
                     <div>
-                      <h4 className="font-medium text-sm">Potential Threats:</h4>
+                      <h4 className="font-medium text-sm">{t('risk_dashboard.potential_threats')}</h4>
                       <ul className="mt-1 space-y-1">
                         {crop.threats.map((threat, idx) => (
                           <li key={idx} className="text-sm flex justify-between">
@@ -499,7 +501,7 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
                           <div className="mt-4">
                             <h4 className="font-semibold text-sm text-gray-800 mb-3 flex items-center">
                               <span className="mr-2">🎯</span>
-                              {crop.name} Specific Recommendations
+                              {crop.name} {t('risk_dashboard.specific_recommendations')}
                             </h4>
                             <div className="space-y-3">
                               {entries.map(([category, messages]) => (
@@ -512,7 +514,7 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
                                       {categoryIcons[category] || "📋"}
                                     </span>
                                     <h5 className="font-medium text-sm text-gray-800 capitalize">
-                                      {category.replace(/_/g, " ")}
+                                      {t(`risk_dashboard.categories.${category}`)}
                                     </h5>
                                   </div>
                                   <div className="space-y-1">

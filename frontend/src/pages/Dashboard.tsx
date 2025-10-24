@@ -104,12 +104,12 @@ const Dashboard = () => {
         <header className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl md:text-4xl font-bold text-agro-green-dark">
-              {userName ? `Hello, ${userName}!` : t('header_title')}
+              {userName ? t('greeting', { name: userName }) : t('header_title')}
             </h1>
           </div>
           <p className="text-gray-600 mt-2">
             {userName 
-              ? `Let’s make today a great day for smart farming` 
+              ? t('welcome_message') 
               : t('header_subtitle', { location })
             }
           </p>
@@ -127,7 +127,7 @@ const Dashboard = () => {
               {t('tabs.fertilizer')}
             </TabsTrigger>
             <TabsTrigger value="advisory" className="text-sm md:text-base">
-              Crop Recommendation
+              {t('tabs.advisory')}
             </TabsTrigger>
             <TabsTrigger value="chat" className="text-sm md:text-base">
               {t('tabs.chat')}
