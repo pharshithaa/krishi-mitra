@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import i18n from "@/i18n";
+import KrishiLogo from "./KrishiLogo";
 
 interface NavbarProps {
   location: string;
@@ -49,7 +50,8 @@ const Navbar: React.FC<NavbarProps> = ({ location, setLocation }) => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <KrishiLogo size="md" variant="default" />
               <span className="text-xl font-bold text-agro-green-dark">
                 {t('brand')}
               </span>

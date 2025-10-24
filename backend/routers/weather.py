@@ -65,7 +65,7 @@ def get_weather_by_city(
             token = auth.split(" ", 1)[1]
             try:
                 payload = decode_access_token(token)
-                email = payload.get("sub") if isinstance(payload, dict) else None
+                email = payload.get("email") if isinstance(payload, dict) else None
                 if email:
                     user = users_collection.find_one({"email": email})
                     if user and isinstance(user.get("primary_crops"), list):

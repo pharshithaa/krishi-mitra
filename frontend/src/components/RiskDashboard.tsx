@@ -3,24 +3,165 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Thermometer, Droplets, Wind, AlertTriangle, CloudRain } from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid, Cell } from "recharts";
 
 interface RiskDashboardProps {
   location: string;
 }
 
-const weatherData = [
-  { day: "Mon", temperature: 32, humidity: 65, rainfall: 0 },
-  { day: "Tue", temperature: 30, humidity: 68, rainfall: 0 },
-  { day: "Wed", temperature: 31, humidity: 70, rainfall: 5 },
-  { day: "Thu", temperature: 29, humidity: 75, rainfall: 15 },
-  { day: "Fri", temperature: 28, humidity: 80, rainfall: 8 },
-  { day: "Sat", temperature: 30, humidity: 72, rainfall: 0 },
-  { day: "Sun", temperature: 33, humidity: 60, rainfall: 0 },
-];
+// Remove hardcoded weather data - we'll use real crop risk data instead
 
 // Default fallback crops if user profile missing
 const defaultCrops = ["Rice", "Wheat", "Tomato"];
+
+// Simple alternating pastel colors - green and brown
+const getPastelColor = (index: number): string => {
+  const pastelColors = [
+    "#A8E6A3", // Beautiful pastel green
+    "#A8E6A9", // Nice pastel brown/tan
+  ];
+  
+  return pastelColors[index % 2];
+};
+
+// Crop-specific risk factors and thresholds
+const cropRiskProfiles = {
+  "wheat": {
+    optimalTemp: { min: 15, max: 25 },
+    optimalHumidity: { min: 40, max: 70 },
+    pestRiskHumidity: 75,
+    frostRisk: 5,
+    heatStress: 35,
+    droughtTolerance: "medium",
+    fungalRisk: { humidity: 80, temp: 20 }
+  },
+  "maize": {
+    optimalTemp: { min: 18, max: 30 },
+    optimalHumidity: { min: 50, max: 75 },
+    pestRiskHumidity: 70,
+    frostRisk: 0,
+    heatStress: 35,
+    droughtTolerance: "low",
+    fungalRisk: { humidity: 75, temp: 25 }
+  },
+  "rice": {
+    optimalTemp: { min: 20, max: 35 },
+    optimalHumidity: { min: 70, max: 90 },
+    pestRiskHumidity: 85,
+    frostRisk: 10,
+    heatStress: 40,
+    droughtTolerance: "very_low",
+    fungalRisk: { humidity: 90, temp: 28 }
+  },
+  "soybean": {
+    optimalTemp: { min: 20, max: 30 },
+    optimalHumidity: { min: 60, max: 80 },
+    pestRiskHumidity: 75,
+    frostRisk: 2,
+    heatStress: 32,
+    droughtTolerance: "medium",
+    fungalRisk: { humidity: 85, temp: 22 }
+  },
+  "tomato": {
+    optimalTemp: { min: 18, max: 28 },
+    optimalHumidity: { min: 50, max: 70 },
+    pestRiskHumidity: 75,
+    frostRisk: 5,
+    heatStress: 32,
+    droughtTolerance: "low",
+    fungalRisk: { humidity: 80, temp: 15 }
+  },
+  "mustard": {
+    optimalTemp: { min: 15, max: 25 },
+    optimalHumidity: { min: 40, max: 65 },
+    pestRiskHumidity: 70,
+    frostRisk: 0,
+    heatStress: 30,
+    droughtTolerance: "medium",
+    fungalRisk: { humidity: 75, temp: 20 }
+  },
+  "sugarcane": {
+    optimalTemp: { min: 25, max: 35 },
+    optimalHumidity: { min: 60, max: 85 },
+    pestRiskHumidity: 80,
+    frostRisk: 8,
+    heatStress: 42,
+    droughtTolerance: "low",
+    fungalRisk: { humidity: 85, temp: 30 }
+  }
+};
+
+// Function to calculate crop-specific risk
+const calculateCropRisk = (cropName: string, weather: any): number => {
+  const normalizedName = cropName.toLowerCase().replace(/\s*\([^)]*\)/, '').replace(/\s*\/.*/, '').trim();
+  const profile = cropRiskProfiles[normalizedName];
+  
+  if (!profile) {
+    // Fallback to generic calculation for unknown crops
+    const temp = weather?.temperature ?? 25;
+    const humidity = weather?.humidity ?? 60;
+    const rain = weather?.rain_1h ?? 0;
+    return Math.min(100, Math.max(0, (humidity - 40) + (temp > 32 ? (temp - 32) * 2 : 0) + (rain > 5 ? 20 : 0)));
+  }
+
+  const temp = weather?.temperature ?? 25;
+  const humidity = weather?.humidity ?? 60;
+  const rain = weather?.rain_1h ?? 0;
+  
+  let riskScore = 0;
+  
+  // Temperature stress risk (0-30 points)
+  if (temp < profile.optimalTemp.min) {
+    const tempDiff = profile.optimalTemp.min - temp;
+    riskScore += Math.min(20, tempDiff * 2);
+    if (temp < profile.frostRisk) {
+      riskScore += 15; // Frost risk bonus
+    }
+  } else if (temp > profile.optimalTemp.max) {
+    const tempDiff = temp - profile.optimalTemp.max;
+    riskScore += Math.min(25, tempDiff * 1.5);
+    if (temp > profile.heatStress) {
+      riskScore += 10; // Heat stress bonus
+    }
+  }
+  
+  // Humidity stress risk (0-25 points)
+  if (humidity < profile.optimalHumidity.min) {
+    const humidityDiff = profile.optimalHumidity.min - humidity;
+    riskScore += Math.min(15, humidityDiff * 0.3);
+  } else if (humidity > profile.optimalHumidity.max) {
+    const humidityDiff = humidity - profile.optimalHumidity.max;
+    riskScore += Math.min(20, humidityDiff * 0.4);
+  }
+  
+  // Pest and disease risk (0-25 points)
+  if (humidity > profile.pestRiskHumidity) {
+    riskScore += Math.min(15, (humidity - profile.pestRiskHumidity) * 0.5);
+  }
+  
+  // Fungal disease risk (0-20 points)
+  if (humidity > profile.fungalRisk.humidity && temp > profile.fungalRisk.temp) {
+    riskScore += Math.min(20, (humidity - profile.fungalRisk.humidity) * 0.3 + (temp - profile.fungalRisk.temp) * 0.5);
+  }
+  
+  // Drought/water stress (0-15 points)
+  if (rain === 0 && humidity < 40) {
+    const droughtMultiplier = {
+      "very_low": 2.0,
+      "low": 1.5,
+      "medium": 1.0,
+      "high": 0.5
+    };
+    riskScore += Math.min(15, (40 - humidity) * 0.3 * (droughtMultiplier[profile.droughtTolerance] || 1.0));
+  }
+  
+  // Heavy rain risk (0-10 points)
+  if (rain > 10) {
+    riskScore += Math.min(10, rain * 0.5);
+  }
+  
+  return Math.min(100, Math.max(0, Math.round(riskScore)));
+};
 
 const getRiskColor = (level: number) => {
   if (level < 30) return "bg-green-500";
@@ -60,6 +201,7 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
     harvest_tips?: string;
     fertilizer_tips?: string;
     crop_health?: string;
+    crop_specific_alerts?: Record<string, Record<string, string[]>>;
   } | null>(null);
   const [userCrops, setUserCrops] = useState<string[]>([]);
 
@@ -119,21 +261,80 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
     fetchProfile();
   }, [API_BASE]);
 
-  // Derive crops to display based on user profile; compute a simple risk from weather
+  // Derive crops to display based on user profile; compute crop-specific risk from weather
   const crops = useMemo(() => {
     const names = (userCrops && userCrops.length > 0) ? userCrops : defaultCrops;
     const temp = weather?.temperature ?? 25;
     const humidity = weather?.humidity ?? 60;
-    const rain = weather?.rain_1h ?? 0;
-    // Simple heuristic to generate a 0-100 risk value
-    const baseRisk = Math.min(100, Math.max(0, (humidity - 40) + (temp > 32 ? (temp - 32) * 2 : 0) + (rain > 5 ? 20 : 0)));
-    return names.map((name) => ({
-      name,
-      riskLevel: Math.round(baseRisk),
-      threats: [
-        { name: "Weather-related stress", probability: baseRisk > 60 ? "High" : baseRisk > 30 ? "Medium" : "Low", due: `${Math.round(temp)}°C / ${Math.round(humidity)}%` },
-      ],
-    }));
+    
+    return names.map((name) => {
+      const cropRisk = calculateCropRisk(name, weather);
+      const normalizedName = name.toLowerCase().replace(/\s*\([^)]*\)/, '').replace(/\s*\/.*/, '').trim();
+      const profile = cropRiskProfiles[normalizedName];
+      
+      // Generate specific threats based on current conditions and crop profile
+      const threats = [];
+      
+      if (profile) {
+        // Temperature-based threats
+        if (temp < profile.optimalTemp.min) {
+          threats.push({
+            name: temp < profile.frostRisk ? "Frost damage risk" : "Cold stress",
+            probability: temp < profile.frostRisk ? "High" : "Medium",
+            due: `${Math.round(temp)}°C (optimal: ${profile.optimalTemp.min}-${profile.optimalTemp.max}°C)`
+          });
+        } else if (temp > profile.optimalTemp.max) {
+          threats.push({
+            name: temp > profile.heatStress ? "Heat stress" : "Temperature stress",
+            probability: temp > profile.heatStress ? "High" : "Medium", 
+            due: `${Math.round(temp)}°C (optimal: ${profile.optimalTemp.min}-${profile.optimalTemp.max}°C)`
+          });
+        }
+        
+        // Humidity-based threats
+        if (humidity > profile.pestRiskHumidity) {
+          threats.push({
+            name: "Pest & disease risk",
+            probability: humidity > profile.pestRiskHumidity + 10 ? "High" : "Medium",
+            due: `${Math.round(humidity)}% humidity`
+          });
+        }
+        
+        if (humidity > profile.fungalRisk.humidity && temp > profile.fungalRisk.temp) {
+          threats.push({
+            name: "Fungal disease risk", 
+            probability: "High",
+            due: `${Math.round(humidity)}% humidity + ${Math.round(temp)}°C`
+          });
+        }
+        
+        // Drought stress
+        if (weather?.rain_1h === 0 && humidity < 40) {
+          const severity = profile.droughtTolerance === "very_low" ? "High" : 
+                         profile.droughtTolerance === "low" ? "Medium" : "Low";
+          threats.push({
+            name: "Drought stress",
+            probability: severity,
+            due: `No rain + ${Math.round(humidity)}% humidity`
+          });
+        }
+      }
+      
+      // Fallback threat if no specific threats identified
+      if (threats.length === 0) {
+        threats.push({
+          name: "Weather-related stress",
+          probability: cropRisk > 60 ? "High" : cropRisk > 30 ? "Medium" : "Low",
+          due: `${Math.round(temp)}°C / ${Math.round(humidity)}%`
+        });
+      }
+      
+      return {
+        name,
+        riskLevel: cropRisk,
+        threats: threats.slice(0, 3) // Limit to top 3 threats
+      };
+    });
   }, [userCrops, weather]);
 
   return (
@@ -184,41 +385,41 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Weather Forecast</CardTitle>
-            <CardDescription>7-day weather prediction</CardDescription>
+            <CardTitle>Risk Distribution Overview</CardTitle>
+            <CardDescription>Current risk levels across all your crops</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={weatherData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="temperatureGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="humidityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="day" />
-                <YAxis />
+              <BarChart data={crops} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <Tooltip />
-                <Area 
-                  type="monotone" 
-                  dataKey="temperature" 
-                  stroke="#F59E0B" 
-                  fillOpacity={1} 
-                  fill="url(#temperatureGradient)" 
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                  interval={0}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="humidity" 
-                  stroke="#3B82F6" 
-                  fillOpacity={1} 
-                  fill="url(#humidityGradient)" 
+                <YAxis 
+                  label={{ value: 'Risk Level (%)', angle: -90, position: 'insideLeft' }}
+                  domain={[0, 25]}
+                  ticks={[0, 5, 10, 15, 20, 25]}
                 />
-              </AreaChart>
+                <Tooltip 
+                  formatter={(value) => [`${value}%`, 'Risk Level']}
+                  labelFormatter={(label) => `Crop: ${label}`}
+                />
+                <Bar 
+                  dataKey="riskLevel" 
+                  radius={[4, 4, 0, 0]}
+                >
+                  {crops.map((crop, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={getPastelColor(index)} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
@@ -261,19 +462,72 @@ const RiskDashboard: React.FC<RiskDashboardProps> = ({ location }) => {
                           </li>
                         ))}
                       </ul>
-                      {alerts && (
-                        <div className="mt-3">
-                          <h4 className="font-medium text-sm">Farm Alerts:</h4>
-                          <ul className="mt-1 space-y-1 text-sm text-gray-700">
-                            {alerts.irrigation && <li>• {alerts.irrigation}</li>}
-                            {alerts.pest_alert && <li>• {alerts.pest_alert}</li>}
-                            {alerts.harvest_tips && <li>• {alerts.harvest_tips}</li>}
-                            {alerts.fertilizer_tips && <li>• {alerts.fertilizer_tips}</li>}
-                            {alerts.general_tips && <li>• {alerts.general_tips}</li>}
-                            {alerts.crop_health && <li>• {alerts.crop_health}</li>}
-                          </ul>
-                        </div>
-                      )}
+                      
+                      {/* Crop-specific recommendations */}
+                      {(() => {
+                        if (!alerts?.crop_specific_alerts) return null;
+                        const direct = alerts.crop_specific_alerts[crop.name];
+                        const matchKey = direct
+                          ? crop.name
+                          : Object.keys(alerts.crop_specific_alerts).find(
+                              (key) => key.toLowerCase() === crop.name.toLowerCase()
+                            );
+                        const cropAlerts = matchKey
+                          ? alerts.crop_specific_alerts[matchKey]
+                          : null;
+                        if (!cropAlerts) return null;
+                        const entries = Object.entries(cropAlerts).filter(([, messages]) => messages?.length);
+                        if (entries.length === 0) return null;
+
+                        const categoryIcons = {
+                          irrigation: "💧",
+                          pest_alert: "🐛",
+                          harvest_tips: "🌾",
+                          fertilizer_tips: "🧪",
+                          crop_health: "🌱"
+                        };
+
+                        const categoryColors = {
+                          irrigation: "bg-blue-50 border-blue-200",
+                          pest_alert: "bg-red-50 border-red-200", 
+                          harvest_tips: "bg-green-50 border-green-200",
+                          fertilizer_tips: "bg-purple-50 border-purple-200",
+                          crop_health: "bg-yellow-50 border-yellow-200"
+                        };
+
+                        return (
+                          <div className="mt-4">
+                            <h4 className="font-semibold text-sm text-gray-800 mb-3 flex items-center">
+                              <span className="mr-2">🎯</span>
+                              {crop.name} Specific Recommendations
+                            </h4>
+                            <div className="space-y-3">
+                              {entries.map(([category, messages]) => (
+                                <div 
+                                  key={category} 
+                                  className={`p-3 rounded-lg border ${categoryColors[category] || "bg-gray-50 border-gray-200"}`}
+                                >
+                                  <div className="flex items-center mb-2">
+                                    <span className="text-lg mr-2">
+                                      {categoryIcons[category] || "📋"}
+                                    </span>
+                                    <h5 className="font-medium text-sm text-gray-800 capitalize">
+                                      {category.replace(/_/g, " ")}
+                                    </h5>
+                                  </div>
+                                  <div className="space-y-1">
+                                    {messages.map((message, idx) => (
+                                      <p key={idx} className="text-sm text-gray-700 leading-relaxed">
+                                        {message}
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

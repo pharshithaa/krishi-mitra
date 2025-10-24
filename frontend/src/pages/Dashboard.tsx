@@ -15,6 +15,57 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_BASE || "http://127.0.0.1:8000";
   const [checking, setChecking] = useState(true);
+  const [userName, setUserName] = useState<string>("");
+  const [locationLoading, setLocationLoading] = useState(false);
+
+  // Function to get user's current location
+  const getCurrentLocation = async () => {
+    if (!navigator.geolocation) {
+      console.log("Geolocation is not supported by this browser.");
+      return;
+    }
+
+    setLocationLoading(true);
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+          );
+          const data = await res.json();
+          
+          // Format location as "City, State"
+          const detectedLocation = data.city && data.principalSubdivision 
+            ? `${data.city}, ${data.principalSubdivision}`
+            : data.city || "Bangalore, Karnataka";
+          
+          setLocation(detectedLocation);
+          console.log("Detected location:", detectedLocation);
+        } catch (error) {
+          console.error("Error getting location details:", error);
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        setLocationLoading(false);
+        // Keep default location if geolocation fails
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // Cache for 5 minutes
+      }
+    );
+  };
+
+  // Get user's location on component mount
+  useEffect(() => {
+    getCurrentLocation();
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -30,6 +81,11 @@ const Dashboard = () => {
         if (res.status === 401 || res.status === 403) {
           localStorage.removeItem("access_token");
           navigate("/auth");
+        } else if (res.ok) {
+          const userData = await res.json();
+          if (userData?.full_name) {
+            setUserName(userData.full_name);
+          }
         }
       } catch {
         navigate("/auth");
@@ -46,11 +102,16 @@ const Dashboard = () => {
       
       <main className="container mx-auto py-6 px-4">
         <header className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-agro-green-dark">
-            {t('header_title')}
-          </h1>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl md:text-4xl font-bold text-agro-green-dark">
+              {userName ? `Hello, ${userName}!` : t('header_title')}
+            </h1>
+          </div>
           <p className="text-gray-600 mt-2">
-            {t('header_subtitle', { location })}
+            {userName 
+              ? `Let’s make today a great day for smart farming` 
+              : t('header_subtitle', { location })
+            }
           </p>
         </header>
 

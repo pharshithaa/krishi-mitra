@@ -38,46 +38,46 @@ CROP_SPECIFIC_RULES = {
     },
     "wheat": {
         "irrigation": [
-            {"condition": lambda w, f: f["soil_moisture"] < 25,
-             "message": "🌾 Wheat soil moisture low: Irrigate to maintain growth."}
+            {"condition": lambda w, f: f.get("soil_moisture", 50) < 60,
+             "message": "🌾 Wheat soil moisture moderate: Consider irrigation to maintain optimal growth."}
         ],
         "pest_alert": [
-            {"condition": lambda w, f: w["humidity"] > 85,
-             "message": "🌾 Rust or aphid risk on wheat: Inspect and apply suitable pesticides."}
+            {"condition": lambda w, f: w["humidity"] > 70,
+             "message": "🌾 High humidity detected: Monitor wheat for rust or aphid risk and inspect regularly."}
         ],
         "harvest_tips": [
-            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] < 40,
-             "message": "🌾 Wheat ready for harvesting under dry, warm conditions."}
+            {"condition": lambda w, f: w["temperature"] > 20 and w["humidity"] < 80,
+             "message": "🌾 Good conditions for wheat: Harvest timing is favorable with current weather."}
         ],
         "fertilizer_tips": [
-            {"condition": lambda w, f: w["temperature"] > 35,
-             "message": "🔥 Avoid fertilizer on wheat in hot weather; irrigate first."}
+            {"condition": lambda w, f: w["temperature"] > 15 and w["temperature"] < 30,
+             "message": "🌾 Optimal temperature for wheat fertilizer application: Apply balanced NPK."}
         ],
         "crop_health": [
-            {"condition": lambda w, f: w["temperature"] < 5,
-             "message": "❄️ Frost risk for wheat: Cover sensitive plants."}
+            {"condition": lambda w, f: w["humidity"] > 75,
+             "message": "🌾 High humidity may stress wheat: Monitor for fungal diseases and ensure good air circulation."}
         ]
     },
     "maize": {
         "irrigation": [
-            {"condition": lambda w, f: f["soil_moisture"] < 30,
-             "message": "🌽 Maize soil moisture low: Irrigate to avoid yield loss."}
+            {"condition": lambda w, f: f.get("soil_moisture", 50) < 60,
+             "message": "🌽 Maize soil moisture moderate: Consider irrigation for optimal growth."}
         ],
         "pest_alert": [
-            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] > 70,
-             "message": "🌽 Maize may face stem borer/fungal risk: Monitor daily."}
+            {"condition": lambda w, f: w["temperature"] > 20 and w["humidity"] > 70,
+             "message": "🌽 Maize may face stem borer/fungal risk: Monitor daily and inspect leaves."}
         ],
         "harvest_tips": [
-            {"condition": lambda w, f: w["rain_1h"] > 5 or w.get("rain_3h", 0) > 10,
-             "message": "⛔ Avoid harvesting maize in wet conditions."}
+            {"condition": lambda w, f: w["temperature"] > 15 and w["humidity"] < 85,
+             "message": "🌽 Good conditions for maize harvest: Weather is suitable for field operations."}
         ],
         "fertilizer_tips": [
-            {"condition": lambda w, f: f["soil_moisture"] < 30,
-             "message": "💧 Irrigate maize before fertilizer application to prevent stress."}
+            {"condition": lambda w, f: w["temperature"] > 18 and w["temperature"] < 35,
+             "message": "🌽 Optimal temperature for maize fertilizer: Apply nitrogen-rich fertilizer."}
         ],
         "crop_health": [
-            {"condition": lambda w, f: w["temperature"] > 35 and w["humidity"] > 70,
-             "message": "🔥 Heat + humidity stress: Provide shade and monitor maize for wilting."}
+            {"condition": lambda w, f: w["humidity"] > 75,
+             "message": "🌽 High humidity may stress maize: Monitor for leaf diseases and ensure good drainage."}
         ]
     },
     "barley": {
@@ -236,7 +236,29 @@ CROP_SPECIFIC_RULES = {
              "message": "🥶 Black Gram: Low temperatures can stunt growth; ensure sufficient mulching."}
         ]
     },
-    # Note: Rules for Green Gram, Pigeon Pea, Soybean, Peas should be added here to complete the Pulses/Legumes category.
+    "soybean": {
+        "irrigation": [
+            {"condition": lambda w, f: f.get("soil_moisture", 50) < 60,
+             "message": "🌱 Soybean: Maintain adequate soil moisture for optimal pod filling."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 75 and w["temperature"] > 20,
+             "message": "🌱 Soybean: Monitor for rust and pod borer; high humidity increases risk."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 25 and w["humidity"] < 70,
+             "message": "🌱 Soybean: Good conditions for harvest; pods should be dry and rattling."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: w["temperature"] > 18 and w["temperature"] < 32,
+             "message": "🌱 Soybean: Apply phosphorus and potassium; nitrogen fixation reduces N needs."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["humidity"] > 80,
+             "message": "🌱 Soybean: High humidity may cause fungal diseases; ensure good air circulation."}
+        ]
+    },
+    # Note: Rules for Green Gram, Pigeon Pea, Peas should be added here to complete the Pulses/Legumes category.
 
     # 3️⃣ Oilseeds
     "groundnut": {
@@ -261,7 +283,29 @@ CROP_SPECIFIC_RULES = {
              "message": "🔥 Groundnut: Severe heat stress; irrigate heavily and look for wilting/scorch."}
         ]
     },
-    # Note: Rules for Mustard, Sunflower, Sesame, Coconut should be added here to complete the Oilseeds category.
+    "mustard": {
+        "irrigation": [
+            {"condition": lambda w, f: f.get("soil_moisture", 50) < 50,
+             "message": "🌻 Mustard: Moderate irrigation needed, especially during flowering and pod filling."}
+        ],
+        "pest_alert": [
+            {"condition": lambda w, f: w["humidity"] > 70 and w["temperature"] > 20,
+             "message": "🌻 Mustard: Monitor for aphids and white rust; apply appropriate pesticides."}
+        ],
+        "harvest_tips": [
+            {"condition": lambda w, f: w["temperature"] > 25 and w["humidity"] < 60,
+             "message": "🌻 Mustard: Good conditions for harvest; pods should be mature and dry."}
+        ],
+        "fertilizer_tips": [
+            {"condition": lambda w, f: w["temperature"] > 15 and w["temperature"] < 30,
+             "message": "🌻 Mustard: Apply nitrogen and sulfur fertilizer for better oil content."}
+        ],
+        "crop_health": [
+            {"condition": lambda w, f: w["humidity"] > 75,
+             "message": "🌻 Mustard: High humidity may cause fungal diseases; ensure good field drainage."}
+        ]
+    },
+    # Note: Rules for Sunflower, Sesame, Coconut should be added here to complete the Oilseeds category.
 
     # 4️⃣ Cash/Plantation Crops
     "sugarcane": {
@@ -270,7 +314,7 @@ CROP_SPECIFIC_RULES = {
              "message": "🌿 Sugarcane: Heavy irrigation needed to maintain growth, especially in summer."},
         ],
         "pest_alert": [
-            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] > 70,
+            {"condition": lambda w, f: w["temperature"] > 30 and w["humidity"] > 60,
              "message": "🌿 Sugarcane: Monitor for shoot borer/red rot risk under warm, humid conditions."},
         ],
         "harvest_tips": [
@@ -291,24 +335,24 @@ CROP_SPECIFIC_RULES = {
     # 5️⃣ Vegetables
     "tomato": {
         "irrigation": [
-            {"condition": lambda w, f: f["soil_moisture"] < 30,
+            {"condition": lambda w, f: f.get("soil_moisture", 50) < 60,
              "message": "🍅 Tomato: Consistent watering is critical to prevent blossom end rot."},
         ],
         "pest_alert": [
-            {"condition": lambda w, f: w["humidity"] > 80 and w["temperature"] < 25,
+            {"condition": lambda w, f: w["humidity"] > 75 and w["temperature"] > 15,
              "message": "🍅 Tomato: High risk of late blight; apply protectant fungicide immediately."},
         ],
         "harvest_tips": [
-            {"condition": lambda w, f: w["temperature"] > 35,
-             "message": "🍅 Tomato: Harvest early in the day; extreme heat can soften fruit quickly."},
+            {"condition": lambda w, f: w["temperature"] > 20 and w["humidity"] < 85,
+             "message": "🍅 Tomato: Good conditions for harvest; pick ripe fruits early in the day."},
         ],
         "fertilizer_tips": [
-            {"condition": lambda w, f: f.get("soil_potassium") == "low",
-             "message": "🧪 Tomato: Apply potassium-rich fertilizer during fruiting stage."},
+            {"condition": lambda w, f: w["temperature"] > 18 and w["temperature"] < 32,
+             "message": "🍅 Tomato: Apply potassium-rich fertilizer during fruiting stage for better quality."},
         ],
         "crop_health": [
-            {"condition": lambda w, f: w["temperature"] > 38,
-             "message": "🔥 Tomato: Heat stress; may lead to flower drop. Shade or misting may help."}
+            {"condition": lambda w, f: w["humidity"] > 75,
+             "message": "🍅 Tomato: High humidity may cause fungal issues; ensure good air circulation."}
         ]
     },
     # Note: Rules for Onion, Potato, Carrot, Cabbage/Cauliflower/Broccoli, Brinjal, Capsicum, Cucumber, Spinach should be added here to complete the Vegetables category.
@@ -679,6 +723,13 @@ def _normalize_crop_name(name: str) -> str:
         s = s.split("(", 1)[0].strip()
     if "/" in s:
         s = s.split("/", 1)[0].strip()
+    
+    # Handle common aliases
+    if s == "corn":
+        s = "maize"
+    elif s == "rapeseed":
+        s = "mustard"
+    
     return s
 
 def get_weather_by_location(city: str, state: str = None, country: str = "IN") -> dict:
@@ -888,30 +939,39 @@ def generate_farm_alerts(weather_info: dict, farm: dict) -> dict:
             # fallback to single crop_type field
             primary = [farm.get("crop_type", "generic")]
         matched_msgs = {k: [] for k in alerts.keys()}
+        matched_per_crop: dict[str, dict[str, list[str]]] = {}
+        
         for raw_name in primary:
             key = _normalize_crop_name(str(raw_name))
             rules = CROP_SPECIFIC_RULES.get(key)
+            
             if not rules:
                 continue
+                
             for category, rule_list in rules.items():
                 for rule in rule_list:
                     cond = rule.get("condition")
                     msg = rule.get("message")
-                    if callable(cond) and msg and cond(weather_info, farm):
-                        # prefix with crop name for clarity
-                        prefixed = f"[{raw_name}] {msg}"
-                        matched_msgs[category].append(prefixed)
-        # merge into alerts (preserve existing general messages)
-        for category, items in matched_msgs.items():
-            if items:
-                base = alerts.get(category)
-                if base:
-                    # combine; keep base first
-                    alerts[category] = base + " " + " ".join(items)
-                else:
-                    alerts[category] = " ".join(items)
-    except Exception:
+                    if callable(cond) and msg:
+                        try:
+                            condition_met = cond(weather_info, farm)
+                            if condition_met:
+                                # prefix with crop name for clarity
+                                prefixed = f"[{raw_name}] {msg}"
+                                matched_msgs[category].append(prefixed)
+                                crop_bucket = matched_per_crop.setdefault(str(raw_name), {})
+                                crop_bucket.setdefault(category, []).append(msg)
+                        except Exception:
+                            # ignore condition evaluation errors
+                            pass
+        
+        # Don't merge crop-specific messages into general alerts since we display them separately
+        # Just add the crop_specific_alerts to the response
+        if matched_per_crop:
+            alerts["crop_specific_alerts"] = matched_per_crop
+    except Exception as e:
         # fail-safe: never break alerts generation
+        print(f"DEBUG: Exception in crop-specific rules: {e}")
         pass
 
     return alerts
