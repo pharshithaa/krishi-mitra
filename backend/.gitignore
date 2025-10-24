@@ -50,8 +50,8 @@ htmlcov/
 .tox/
 
 # Models (downloaded by sentence-transformers)
-models/
-.cache/
+# models/
+# .cache/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -64,3 +64,10 @@ models/
 *.tmp
 *.bak
 *.swp
+
+# ✅ Allow model files inside models/
+!models/*.pkl
+!models/*.joblib
+!models/*.h5
+!models/*.keras
+!models/*.pb
