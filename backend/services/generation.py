@@ -57,17 +57,35 @@ class GenerationService:
         Returns:
             Formatted prompt string
         """
-        # Combine retrieved text
+        # Combine retrieved text with metadata
         context_texts = []
         for i, chunk in enumerate(retrieved_chunks, 1):
             text = chunk.get("text", "")
-            filename = chunk.get("metadata", {}).get("filename", "unknown")
-            context_texts.append(f"[Source {i} - {filename}]\n{text}")
+            metadata = chunk.get("metadata", {})
+            
+            # Extract useful metadata
+            filename = metadata.get("filename", "unknown")
+            state = metadata.get("state", "")
+            crop = metadata.get("crop", "")
+            season = metadata.get("season", "")
+            
+            # Build context header with available metadata
+            header_parts = [f"Source {i}"]
+            if state:
+                header_parts.append(f"State: {state}")
+            if crop:
+                header_parts.append(f"Crop: {crop}")
+            if season:
+                header_parts.append(f"Season: {season}")
+            header_parts.append(f"File: {filename}")
+            
+            header = "[" + " | ".join(header_parts) + "]"
+            context_texts.append(f"{header}\n{text}")
         
         combined_context = "\n\n".join(context_texts)
         
         # Create RAG prompt
-        prompt = f"""You are KrishiMitra, an AI assistant specialized in Indian agriculture. Answer the farmer's question using the provided context from agricultural documents.
+        prompt = f"""You are KrishiMitra, an AI assistant specialized in Indian agriculture. Answer the farmer's question using the information provided below.
 
 Context Information:
 {combined_context}
@@ -75,13 +93,23 @@ Context Information:
 Question: {query}
 
 Instructions:
-1. Provide a helpful, accurate answer based on the context provided
-2. Focus on practical advice relevant to Indian farming conditions
-3. If the context doesn't contain enough information, say so clearly
-4. Use simple language that farmers can understand
-5. Include specific details like crop varieties, seasons, or regions when mentioned in the context
+1. Provide a helpful, direct answer using the information available
+2. When asked about specific regions/states:
+   - Use exact regional data if available
+   - Otherwise, provide general agricultural guidelines that apply to similar conditions
+   - Mention the region/state naturally in your answer when relevant
+3. Combine information from multiple sources to give complete, practical answers
+4. Include specific details like:
+   - Crop varieties and characteristics
+   - NPK values and fertilizer recommendations
+   - Sowing times, spacing, and seed rates
+   - Pest/disease management practices
+   - Regional or seasonal variations
+5. Write in simple, conversational language as if advising a farmer directly
+6. Be confident and helpful - focus on what you can tell them
+7. Only mention lack of information if the question is completely outside agriculture or if truly no relevant information exists
 
-Answer:"""
+Answer the question naturally and helpfully:"""
         
         return prompt
     
