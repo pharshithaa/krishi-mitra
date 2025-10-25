@@ -71,3 +71,4 @@ htmlcov/
 !models/*.h5
 !models/*.keras
 !models/*.pb
+.coverage.Srishtis-MacBook-Air.local.39602.XsDSTLfx
